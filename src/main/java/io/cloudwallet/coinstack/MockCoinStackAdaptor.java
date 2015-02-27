@@ -48,6 +48,24 @@ public class MockCoinStackAdaptor {
 										false,
 										5000000000l,
 										"4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac") }));
+
+		transactionDB
+				.put("001f5eba608a84ba97dd7ac1b21b822b74c91ffbd75c42c7b88abe178f632b31",
+						new Transaction(
+								"001f5eba608a84ba97dd7ac1b21b822b74c91ffbd75c42c7b88abe178f632b31",
+								new String[] { "00000000000000000fad06ca404d52a779d452000057a8342b064618d05a4450" },
+								new Date(1425014682000L),
+								false,
+								new Input[] {new Input(0, "1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1", "f693cadeacdbb2d980155fbafc82f00c607f2a1fb185cd27b054064b43d00f16", 7998950000L)},
+								new Output[] {
+										new Output(
+												"15Zf4AybWDV6QRcaJ4ErowVxhpdG89Qjni",
+												false, 600000000L,
+												"76a914320d9492f6b348e003a1ba30afca95eb8d0609e588ac"),
+										new Output(
+												"1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1",
+												false, 7398940000L,
+												"76a9148c2a2661cb4afd3ae0c1ea7b1beb5d34e769dbbc88ac") }));
 	}
 
 	public int getBestHeight() {
