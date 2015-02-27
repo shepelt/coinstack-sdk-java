@@ -9,11 +9,23 @@ package io.cloudwallet.coinstack;
  */
 public class CoinStackClient {
 	/**
-	 * @param mockCoinStackAdaptor 
-	 * @return 
+	 * @param mockCoinStackAdaptor
+	 * @return
 	 * 
 	 */
-	public static BlockchainStatus getBlockchainStatus(MockCoinStackAdaptor mockCoinStackAdaptor) {
-		return new BlockchainStatus(mockCoinStackAdaptor.getBestHeight(), mockCoinStackAdaptor.getBestBlockHash());
+	public static BlockchainStatus getBlockchainStatus(
+			MockCoinStackAdaptor mockCoinStackAdaptor) {
+		return new BlockchainStatus(mockCoinStackAdaptor.getBestHeight(),
+				mockCoinStackAdaptor.getBestBlockHash());
+	}
+
+	public static Block getBlock(MockCoinStackAdaptor mockCoinStackAdaptor,
+			String blockId) {
+		return mockCoinStackAdaptor.getBlock(blockId);
+	}
+
+	public static Transaction getTransaction(MockCoinStackAdaptor mockCoinStackAdaptor,
+			String transactionId) {
+		return mockCoinStackAdaptor.getTransaction(transactionId);
 	}
 }
