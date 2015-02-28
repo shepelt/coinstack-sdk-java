@@ -40,4 +40,9 @@ public class CoinStackClient {
 			MockCoinStackAdaptor mockCoinStackAdaptor, String address) {
 		return mockCoinStackAdaptor.getBalance(address);
 	}
+
+	public static Output[] getUnspentOutputs(
+			MockCoinStackAdaptor mockCoinStackAdaptor, String address) {
+		return mockCoinStackAdaptor.getUnspentOutputs(address);
+	}
 }

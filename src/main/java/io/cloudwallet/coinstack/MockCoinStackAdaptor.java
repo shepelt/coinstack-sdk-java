@@ -46,6 +46,8 @@ public class MockCoinStackAdaptor {
 								true,
 								new Input[] {},
 								new Output[] { new Output(
+										null,
+										0,
 										"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
 										false,
 										5000000000l,
@@ -65,10 +67,14 @@ public class MockCoinStackAdaptor {
 										7998950000L) },
 								new Output[] {
 										new Output(
+												null,
+												0,
 												"15Zf4AybWDV6QRcaJ4ErowVxhpdG89Qjni",
 												false, 600000000L,
 												"76a914320d9492f6b348e003a1ba30afca95eb8d0609e588ac"),
 										new Output(
+												null,
+												0,
 												"1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1",
 												false, 7398940000L,
 												"76a9148c2a2661cb4afd3ae0c1ea7b1beb5d34e769dbbc88ac") }));
@@ -83,14 +89,27 @@ public class MockCoinStackAdaptor {
 		List<String> list2 = new ArrayList<String>();
 		list2.add("f762df2ff3340171ce913bd3fc2534ee4f15166ffff46a85019eeb52efb8da9b");
 		addressHistoryDB.put("1changeFu9bT4Bzbo8qQTcHS7pRfLcX1D", list2);
-		
+
 		List<String> list3 = new ArrayList<String>();
 		list3.add("f762df2ff3340171ce913bd3fc2534ee4f15166ffff46a85019eeb52efb8da9b");
 		addressHistoryDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", list3);
 	}
 	private Map<String, Long> addressBalanceDB = new HashMap<String, Long>();
 	{
-		addressBalanceDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", new Long(4580000000L));
+		addressBalanceDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", new Long(
+				4580000000L));
+	}
+	private Map<String, List<Output>> unspentOutputDB = new HashMap<String, List<Output>>();
+	{
+		List<Output> outputList = new ArrayList<Output>();
+		outputList.add(new Output(
+								"9bdab8ef52eb9e01856af4ff6f16154fee3425fcd33b91ce710134f32fdf62f7",
+								0, "1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", false,
+								4580000000L,
+								"76a9140acd296e1ba0b5153623c3c55f2d5b45b1a25ce988ac"));
+		unspentOutputDB
+				.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6",
+						outputList);
 	}
 
 	public int getBestHeight() {
@@ -115,6 +134,10 @@ public class MockCoinStackAdaptor {
 
 	public long getBalance(String address) {
 		return addressBalanceDB.get(address);
+	}
+
+	public Output[] getUnspentOutputs(String address) {
+		return unspentOutputDB.get(address).toArray(new Output[0]);
 	}
 
 }

@@ -173,5 +173,14 @@ public class CoinStackClientTest {
 				"1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6");
 		// Test 를 위해 그 누구도 권한이 없는 주소로 송금하였습니다. 혹시 잔고가 변경되면 연락해주세요.
 		assertTrue(balance == 4580000000L);
+		
+		// testing unspent outputs
+		Output[] outputs = CoinStackClient.getUnspentOutputs(mockCoinStackAdaptor, "1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6");
+		assertNotNull(outputs);
+		assertEquals(1, outputs.length);
+		assertEquals("9bdab8ef52eb9e01856af4ff6f16154fee3425fcd33b91ce710134f32fdf62f7", outputs[0].getTransactionId());
+		assertEquals(0, outputs[0].getIndex());
+		assertEquals(4580000000L, outputs[0].getValue());
+		assertEquals("76a9140acd296e1ba0b5153623c3c55f2d5b45b1a25ce988ac", outputs[0].getScript());
 	}
 }
