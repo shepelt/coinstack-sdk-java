@@ -174,16 +174,4 @@ public class CoinStackClientTest {
 		// Test 를 위해 그 누구도 권한이 없는 주소로 송금하였습니다. 혹시 잔고가 변경되면 연락해주세요.
 		assertTrue(balance == 4580000000L);
 	}
-
-	@Test
-	public void testTimestamp() {
-		Timestamp timestamp = new Timestamp(1231006505000L);
-		//System.out.println(timestamp.toString());
-
-		Date date = new Date(1231006505000L);
-		//System.out.println(date.getTime());
-
-		assertEquals(1231006505000L, date.getTime());
-	}
-
 }
