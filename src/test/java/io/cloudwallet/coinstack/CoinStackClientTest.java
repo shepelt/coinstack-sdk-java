@@ -128,12 +128,15 @@ public class CoinStackClientTest {
 		assertFalse(transaction.isCoinbase());
 		assertEquals(1, transaction.getInputs().length);
 		assertNotNull(transaction.getInputs()[0].getOutputTransactionId());
-		assertEquals("f693cadeacdbb2d980155fbafc82f00c607f2a1fb185cd27b054064b43d00f16", transaction.getInputs()[0].getOutputTransactionId());
+		assertEquals(
+				"f693cadeacdbb2d980155fbafc82f00c607f2a1fb185cd27b054064b43d00f16",
+				transaction.getInputs()[0].getOutputTransactionId());
 		assertEquals(0, transaction.getInputs()[0].getOutputIndex());
 		assertNotNull(transaction.getInputs()[0].getOutputAddress());
-		assertEquals("1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1", transaction.getInputs()[0].getOutputAddress());
+		assertEquals("1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1",
+				transaction.getInputs()[0].getOutputAddress());
 		assertEquals(7998950000L, transaction.getInputs()[0].getValue());
-		
+
 		assertEquals(2, transaction.getOutputs().length);
 		assertEquals("15Zf4AybWDV6QRcaJ4ErowVxhpdG89Qjni",
 				transaction.getOutputs()[0].getAddress());
@@ -148,12 +151,37 @@ public class CoinStackClientTest {
 	}
 
 	@Test
+	public void testAddress() {
+		MockCoinStackAdaptor mockCoinStackAdaptor = new MockCoinStackAdaptor();
+		// Genesis Address
+		String[] transactions = CoinStackClient.getTransactions(
+				mockCoinStackAdaptor, "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
+
+		assertNotNull(transactions);
+		assertTrue(transactions.length >= 1);
+
+		transactions = CoinStackClient.getTransactions(mockCoinStackAdaptor,
+				"1changeFu9bT4Bzbo8qQTcHS7pRfLcX1D");
+		assertNotNull(transactions);
+		assertTrue(transactions.length >= 1);
+
+		transactions = CoinStackClient.getTransactions(mockCoinStackAdaptor,
+				"1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6");
+		assertNotNull(transactions);
+		assertTrue(transactions.length == 1);
+		long balance = CoinStackClient.getBalance(mockCoinStackAdaptor,
+				"1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6");
+		// Test 를 위해 그 누구도 권한이 없는 주소로 송금하였습니다. 혹시 잔고가 변경되면 연락해주세요.
+		assertTrue(balance == 4580000000L);
+	}
+
+	@Test
 	public void testTimestamp() {
 		Timestamp timestamp = new Timestamp(1231006505000L);
-		System.out.println(timestamp.toString());
+		//System.out.println(timestamp.toString());
 
 		Date date = new Date(1231006505000L);
-		System.out.println(date.getTime());
+		//System.out.println(date.getTime());
 
 		assertEquals(1231006505000L, date.getTime());
 	}

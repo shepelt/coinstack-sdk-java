@@ -3,6 +3,8 @@
  */
 package io.cloudwallet.coinstack;
 
+import java.util.List;
+
 /**
  * @author nepho
  *
@@ -24,8 +26,18 @@ public class CoinStackClient {
 		return mockCoinStackAdaptor.getBlock(blockId);
 	}
 
-	public static Transaction getTransaction(MockCoinStackAdaptor mockCoinStackAdaptor,
-			String transactionId) {
+	public static Transaction getTransaction(
+			MockCoinStackAdaptor mockCoinStackAdaptor, String transactionId) {
 		return mockCoinStackAdaptor.getTransaction(transactionId);
+	}
+
+	public static String[] getTransactions(
+			MockCoinStackAdaptor mockCoinStackAdaptor, String address) {
+		return mockCoinStackAdaptor.getTransactions(address);
+	}
+
+	public static long getBalance(
+			MockCoinStackAdaptor mockCoinStackAdaptor, String address) {
+		return mockCoinStackAdaptor.getBalance(address);
 	}
 }

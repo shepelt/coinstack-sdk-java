@@ -3,8 +3,10 @@
  */
 package io.cloudwallet.coinstack;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -56,7 +58,11 @@ public class MockCoinStackAdaptor {
 								new String[] { "00000000000000000fad06ca404d52a779d452000057a8342b064618d05a4450" },
 								new Date(1425014682000L),
 								false,
-								new Input[] {new Input(0, "1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1", "f693cadeacdbb2d980155fbafc82f00c607f2a1fb185cd27b054064b43d00f16", 7998950000L)},
+								new Input[] { new Input(
+										0,
+										"1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1",
+										"f693cadeacdbb2d980155fbafc82f00c607f2a1fb185cd27b054064b43d00f16",
+										7998950000L) },
 								new Output[] {
 										new Output(
 												"15Zf4AybWDV6QRcaJ4ErowVxhpdG89Qjni",
@@ -66,6 +72,25 @@ public class MockCoinStackAdaptor {
 												"1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1",
 												false, 7398940000L,
 												"76a9148c2a2661cb4afd3ae0c1ea7b1beb5d34e769dbbc88ac") }));
+	}
+	private Map<String, List<String>> addressHistoryDB = new HashMap<String, List<String>>();
+	{
+		List<String> list1 = new ArrayList<String>();
+		list1.add("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b");
+		list1.add("3387418aaddb4927209c5032f515aa442a6587d6e54677f08a03b8fa7789e688");
+		addressHistoryDB.put("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", list1);
+
+		List<String> list2 = new ArrayList<String>();
+		list2.add("f762df2ff3340171ce913bd3fc2534ee4f15166ffff46a85019eeb52efb8da9b");
+		addressHistoryDB.put("1changeFu9bT4Bzbo8qQTcHS7pRfLcX1D", list2);
+		
+		List<String> list3 = new ArrayList<String>();
+		list3.add("f762df2ff3340171ce913bd3fc2534ee4f15166ffff46a85019eeb52efb8da9b");
+		addressHistoryDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", list3);
+	}
+	private Map<String, Long> addressBalanceDB = new HashMap<String, Long>();
+	{
+		addressBalanceDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", new Long(4580000000L));
 	}
 
 	public int getBestHeight() {
@@ -82,6 +107,14 @@ public class MockCoinStackAdaptor {
 
 	public Transaction getTransaction(String transactionId) {
 		return transactionDB.get(transactionId);
+	}
+
+	public String[] getTransactions(String address) {
+		return addressHistoryDB.get(address).toArray(new String[0]);
+	}
+
+	public long getBalance(String address) {
+		return addressBalanceDB.get(address);
 	}
 
 }
