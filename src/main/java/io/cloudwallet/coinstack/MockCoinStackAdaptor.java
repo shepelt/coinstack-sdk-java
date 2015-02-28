@@ -3,6 +3,7 @@
  */
 package io.cloudwallet.coinstack;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -14,6 +15,13 @@ import java.util.Map;
  *
  */
 public class MockCoinStackAdaptor {
+	public void init(){
+		
+	}
+	public void fini(){
+		
+	}
+
 	private Map<String, Block> blockDB = new HashMap<String, Block>();
 	{
 		blockDB.put(
@@ -102,41 +110,40 @@ public class MockCoinStackAdaptor {
 	private Map<String, List<Output>> unspentOutputDB = new HashMap<String, List<Output>>();
 	{
 		List<Output> outputList = new ArrayList<Output>();
-		outputList.add(new Output(
-								"9bdab8ef52eb9e01856af4ff6f16154fee3425fcd33b91ce710134f32fdf62f7",
-								0, "1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", false,
-								4580000000L,
-								"76a9140acd296e1ba0b5153623c3c55f2d5b45b1a25ce988ac"));
-		unspentOutputDB
-				.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6",
-						outputList);
+		outputList
+				.add(new Output(
+						"9bdab8ef52eb9e01856af4ff6f16154fee3425fcd33b91ce710134f32fdf62f7",
+						0, "1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", false,
+						4580000000L,
+						"76a9140acd296e1ba0b5153623c3c55f2d5b45b1a25ce988ac"));
+		unspentOutputDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", outputList);
 	}
 
-	public int getBestHeight() {
+	public int getBestHeight() throws IOException {
 		return 345229;
 	}
 
-	public String getBestBlockHash() {
+	public String getBestBlockHash() throws IOException {
 		return "00000000000000000326307b927806f617277c8650b70e66d78eab8323423a33";
 	}
 
-	public Block getBlock(String blockId) {
+	public Block getBlock(String blockId) throws IOException {
 		return blockDB.get(blockId);
 	}
 
-	public Transaction getTransaction(String transactionId) {
+	public Transaction getTransaction(String transactionId) throws IOException {
 		return transactionDB.get(transactionId);
 	}
 
-	public String[] getTransactions(String address) {
+	public String[] getTransactions(String address) throws IOException {
 		return addressHistoryDB.get(address).toArray(new String[0]);
 	}
 
-	public long getBalance(String address) {
+	public long getBalance(String address) throws IOException {
 		return addressBalanceDB.get(address);
 	}
 
-	public Output[] getUnspentOutputs(String address) {
+	public Output[] getUnspentOutputs(String address) throws IOException {
 		return unspentOutputDB.get(address).toArray(new Output[0]);
 	}
 

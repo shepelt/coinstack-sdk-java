@@ -3,6 +3,7 @@
  */
 package io.cloudwallet.coinstack;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -10,39 +11,39 @@ import java.util.List;
  *
  */
 public class CoinStackClient {
-	/**
-	 * @param mockCoinStackAdaptor
-	 * @return
-	 * 
-	 */
-	public static BlockchainStatus getBlockchainStatus(
-			MockCoinStackAdaptor mockCoinStackAdaptor) {
-		return new BlockchainStatus(mockCoinStackAdaptor.getBestHeight(),
-				mockCoinStackAdaptor.getBestBlockHash());
+	private MockCoinStackAdaptor coinStackAdaptor;
+
+	public CoinStackClient(MockCoinStackAdaptor coinStackAdaptor) {
+		coinStackAdaptor.init();
+		this.coinStackAdaptor = coinStackAdaptor;
 	}
 
-	public static Block getBlock(MockCoinStackAdaptor mockCoinStackAdaptor,
-			String blockId) {
-		return mockCoinStackAdaptor.getBlock(blockId);
+	public BlockchainStatus getBlockchainStatus() throws IOException {
+		return new BlockchainStatus(coinStackAdaptor.getBestHeight(),
+				coinStackAdaptor.getBestBlockHash());
 	}
 
-	public static Transaction getTransaction(
-			MockCoinStackAdaptor mockCoinStackAdaptor, String transactionId) {
-		return mockCoinStackAdaptor.getTransaction(transactionId);
+	public Block getBlock(String blockId) throws IOException {
+		return coinStackAdaptor.getBlock(blockId);
 	}
 
-	public static String[] getTransactions(
-			MockCoinStackAdaptor mockCoinStackAdaptor, String address) {
-		return mockCoinStackAdaptor.getTransactions(address);
+	public Transaction getTransaction(String transactionId) throws IOException {
+		return coinStackAdaptor.getTransaction(transactionId);
 	}
 
-	public static long getBalance(
-			MockCoinStackAdaptor mockCoinStackAdaptor, String address) {
-		return mockCoinStackAdaptor.getBalance(address);
+	public String[] getTransactions(String address) throws IOException {
+		return coinStackAdaptor.getTransactions(address);
 	}
 
-	public static Output[] getUnspentOutputs(
-			MockCoinStackAdaptor mockCoinStackAdaptor, String address) {
-		return mockCoinStackAdaptor.getUnspentOutputs(address);
+	public long getBalance(String address) throws IOException {
+		return coinStackAdaptor.getBalance(address);
+	}
+
+	public Output[] getUnspentOutputs(String address) throws IOException {
+		return coinStackAdaptor.getUnspentOutputs(address);
+	}
+
+	public void close() {
+		coinStackAdaptor.fini();
 	}
 }
