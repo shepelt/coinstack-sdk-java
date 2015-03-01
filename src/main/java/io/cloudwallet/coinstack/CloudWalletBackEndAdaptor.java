@@ -25,7 +25,18 @@ import org.json.JSONObject;
  *
  */
 public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
+
+	private String endpoint;
 	private HttpClient httpClient;
+
+	public CloudWalletBackEndAdaptor(String endpoint) {
+		super();
+		if (endpoint != null) {
+			this.endpoint = endpoint;
+		} else {
+			this.endpoint = "http://search.cloudwallet.io";
+		}
+	}
 
 	@Override
 	public void init() {
@@ -39,8 +50,7 @@ public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
 
 	@Override
 	public int getBestHeight() throws IOException {
-		HttpGet httpGet = new HttpGet(
-				"http://search.cloudwallet.io/api/bestheight");
+		HttpGet httpGet = new HttpGet(this.endpoint + "/api/bestheight");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
@@ -54,8 +64,7 @@ public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
 
 	@Override
 	public String getBestBlockHash() throws IOException {
-		HttpGet httpGet = new HttpGet(
-				"http://search.cloudwallet.io/api/besthash");
+		HttpGet httpGet = new HttpGet(this.endpoint + "/api/besthash");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
@@ -69,7 +78,34 @@ public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
 
 	@Override
 	public Block getBlock(String blockId) throws IOException {
-		return null;
+		HttpGet httpGet = new HttpGet(this.endpoint + "/api/blocks/" + blockId);
+		HttpResponse res = httpClient.execute(httpGet);
+		String resJsonString = EntityUtils.toString(res.getEntity());
+		System.out.println(resJsonString);
+		JSONObject resJson;
+		try {
+			resJson = new JSONObject(resJsonString);
+			String[] txIds;
+			JSONArray childJsons = resJson.getJSONArray("transaction_list");
+			txIds = new String[childJsons.length()];
+			for (int i = 0; i < childJsons.length(); i++) {
+				txIds[i] = childJsons.getJSONObject(i).getString("_id");
+			}
+			String parentId;
+			if (resJson.isNull("parent")) {
+				parentId = null;
+			} else {
+				parentId = resJson.getString("parent");
+			}
+			return new Block(dateFormat.parse(resJson
+					.getString("confirmation_time")), resJson.getString("_id"),
+					new String[] { resJson.getString("child") },
+					resJson.getInt("height"), parentId, txIds);
+		} catch (JSONException e) {
+			throw new IOException("Parsing response failed", e);
+		} catch (ParseException e) {
+			throw new IOException("Parsing response failed", e);
+		}
 	}
 
 	private static DateFormat dateFormat = new SimpleDateFormat(
@@ -80,9 +116,8 @@ public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
 
 	@Override
 	public Transaction getTransaction(String transactionId) throws IOException {
-		HttpGet httpGet = new HttpGet(
-				"http://search.cloudwallet.io/api/transactions/"
-						+ transactionId);
+		HttpGet httpGet = new HttpGet(this.endpoint + "/api/transactions/"
+				+ transactionId);
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
@@ -139,8 +174,8 @@ public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
 
 	@Override
 	public String[] getTransactions(String address) throws IOException {
-		HttpGet httpGet = new HttpGet("http://search.cloudwallet.io/api/"
-				+ address + "/history");
+		HttpGet httpGet = new HttpGet(this.endpoint + "/api/" + address
+				+ "/history");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONArray resJson;
@@ -160,8 +195,8 @@ public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
 
 	@Override
 	public long getBalance(String address) throws IOException {
-		HttpGet httpGet = new HttpGet("http://search.cloudwallet.io/api/"
-				+ address + "/balance");
+		HttpGet httpGet = new HttpGet(this.endpoint + "/api/" + address
+				+ "/balance");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
@@ -175,8 +210,8 @@ public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
 
 	@Override
 	public Output[] getUnspentOutputs(String address) throws IOException {
-		HttpGet httpGet = new HttpGet("http://search.cloudwallet.io/api/"
-				+ address + "/unspentoutputs");
+		HttpGet httpGet = new HttpGet(this.endpoint + "/api/" + address
+				+ "/unspentoutputs");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONArray resJson;
