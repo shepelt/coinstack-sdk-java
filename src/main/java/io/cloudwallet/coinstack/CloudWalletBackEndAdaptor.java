@@ -4,17 +4,24 @@
 package io.cloudwallet.coinstack;
 
 import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -24,7 +31,7 @@ import org.json.JSONObject;
  * @author nepho
  *
  */
-public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
+public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	private String endpoint;
 	private HttpClient httpClient;
@@ -229,5 +236,38 @@ public class CloudWalletBackEndAdaptor extends MockCoinStackAdaptor {
 			throw new IOException("Parsing response failed", e);
 		}
 		return outputs.toArray(new Output[0]);
+	}
+
+	@Override
+	public void sendTransaction(String rawTransaction) throws IOException,
+			InvalidParameterException {
+		// send tx
+		try {
+			String sendTxEndpoint = endpoint + ":9090/sendtx";
+			HttpPost httpPost = new HttpPost(sendTxEndpoint);
+			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+			nameValuePairs.add(new BasicNameValuePair("tx", rawTransaction));
+			httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+			HttpResponse res = httpClient.execute(httpPost);
+			StatusLine statusLine = res.getStatusLine();
+			int status = statusLine.getStatusCode();
+
+			if (status == 409) {
+				throw new InvalidParameterException(
+						"Transaction already present in blockchain");
+			} else if (status == 200) {
+				// sending tx successful
+				System.out.println("tx sent");
+				return;
+			} else {
+				String resJsonString = EntityUtils.toString(res.getEntity());
+				System.out.println(resJsonString);
+				System.out.println(status);
+				System.out.println(statusLine.getReasonPhrase());
+				throw new IOException(statusLine.getReasonPhrase());
+			}
+		} catch (IOException e) {
+			throw new IOException("Broadcasting transaction failed", e);
+		}
 	}
 }

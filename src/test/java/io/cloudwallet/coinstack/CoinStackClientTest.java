@@ -179,5 +179,81 @@ public class CoinStackClientTest {
 		assertEquals(4580000000L, outputs[0].getValue());
 		assertEquals("76a9140acd296e1ba0b5153623c3c55f2d5b45b1a25ce988ac",
 				outputs[0].getScript());
+		
+		// test validating addesses
+		assertTrue(CoinStackClient.validateAddress("1changeFu9bT4Bzbo8qQTcHS7pRfLcX1D"));
+		assertFalse(CoinStackClient.validateAddress("1A1zP1eP5QGefi2DMPTfssTL5SLmv7sisfN"));
+		
+		// create new private key and address
+		String newPrivateKeyWIF = CoinStackClient.createNewPrivateKey();
+		assertNotNull(newPrivateKeyWIF);
+		String newAddress = CoinStackClient.deriveAddress(newPrivateKeyWIF);
+		assertNotNull(newAddress);
+		assertTrue(CoinStackClient.validateAddress(newAddress));
+	}
+
+	@Test
+	public void testPickOutputNeeded() {
+		// outputs
+		Output[] outputBatch1 = { new Output("", 0, "", false, 2000l, ""),
+				new Output("", 0, "", false, 1000l, ""),
+				new Output("", 0, "", false, 3000l, ""),
+				new Output("", 0, "", false, 4000l, "") };
+		Output[] filtered1 = CoinStackClient.pickOutputsNeeded(outputBatch1,
+				1000l, 0);
+		assertNotNull(filtered1);
+		assertTrue(filtered1.length == 1);
+		assertEquals(1000l, filtered1[0].getValue());
+
+		Output[] filtered2 = CoinStackClient.pickOutputsNeeded(outputBatch1,
+				5000l, 0);
+		assertNotNull(filtered2);
+		assertTrue(filtered2.length == 3);
+		long sum = 0l;
+		for (Output output : filtered2) {
+			sum += output.getValue();
+		}
+		assertTrue(sum >= 5000l);
+
+		// borderline
+		Output[] filtered3 = CoinStackClient.pickOutputsNeeded(outputBatch1,
+				10000l, 0);
+		assertNotNull(filtered3);
+		assertTrue(filtered3.length == 4);
+		sum = 0l;
+		for (Output output : filtered3) {
+			sum += output.getValue();
+		}
+		assertTrue(sum >= 10000l);
+
+		// over flow
+		assertTrue(null == CoinStackClient.pickOutputsNeeded(outputBatch1,
+				110000l, 0));
+		assertTrue(null == CoinStackClient.pickOutputsNeeded(outputBatch1,
+				100000l, 1000));
+		assertTrue(null != CoinStackClient.pickOutputsNeeded(outputBatch1,
+				9000, 1000));
+	}
+	
+	@Test
+	public void testCalculateChange() {
+		Output[] outputBatch1 = { new Output("", 0, "", false, 2000l, ""),
+				new Output("", 0, "", false, 1000l, ""),
+				new Output("", 0, "", false, 3000l, ""),
+				new Output("", 0, "", false, 4000l, "") }; // sum of 10000l outputs
+		
+		assertEquals(0l, CoinStackClient.calculateChange(outputBatch1, 10000l, 0l));
+		assertEquals(0l, CoinStackClient.calculateChange(outputBatch1, 9000l, 1000l));
+		assertEquals(1000l, CoinStackClient.calculateChange(outputBatch1, 9000l, 0l));
+		assertEquals(1000l, CoinStackClient.calculateChange(outputBatch1, 8000l, 1000l));
+		assertEquals(2000l, CoinStackClient.calculateChange(outputBatch1, 8000l, 0000l));
+		assertEquals(2000l, CoinStackClient.calculateChange(outputBatch1, 7000l, 1000l));
+	}
+	
+	@Test
+	public void testConvertEndinaness() {
+		String original = "1234566780";
+		String expected = "8067563412";
+		assertEquals(expected, CoinStackClient.convertEndianness(original));
 	}
 }

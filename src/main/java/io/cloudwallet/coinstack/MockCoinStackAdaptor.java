@@ -14,15 +14,8 @@ import java.util.Map;
  * @author nepho
  *
  */
-public class MockCoinStackAdaptor {
-	public void init(){
-		
-	}
-	public void fini(){
-		
-	}
-
-	private Map<String, Block> blockDB = new HashMap<String, Block>();
+public class MockCoinStackAdaptor extends AbstractCoinStackAdaptor {
+	Map<String, Block> blockDB = new HashMap<String, Block>();
 	{
 		blockDB.put(
 				"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
@@ -43,7 +36,7 @@ public class MockCoinStackAdaptor {
 						"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
 						new String[] { "0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098" }));
 	}
-	private Map<String, Transaction> transactionDB = new HashMap<String, Transaction>();
+	Map<String, Transaction> transactionDB = new HashMap<String, Transaction>();
 	{
 		transactionDB
 				.put("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",
@@ -87,7 +80,7 @@ public class MockCoinStackAdaptor {
 												false, 7398940000L,
 												"76a9148c2a2661cb4afd3ae0c1ea7b1beb5d34e769dbbc88ac") }));
 	}
-	private Map<String, List<String>> addressHistoryDB = new HashMap<String, List<String>>();
+	Map<String, List<String>> addressHistoryDB = new HashMap<String, List<String>>();
 	{
 		List<String> list1 = new ArrayList<String>();
 		list1.add("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b");
@@ -102,12 +95,12 @@ public class MockCoinStackAdaptor {
 		list3.add("f762df2ff3340171ce913bd3fc2534ee4f15166ffff46a85019eeb52efb8da9b");
 		addressHistoryDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", list3);
 	}
-	private Map<String, Long> addressBalanceDB = new HashMap<String, Long>();
+	Map<String, Long> addressBalanceDB = new HashMap<String, Long>();
 	{
 		addressBalanceDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", new Long(
 				4580000000L));
 	}
-	private Map<String, List<Output>> unspentOutputDB = new HashMap<String, List<Output>>();
+	Map<String, List<Output>> unspentOutputDB = new HashMap<String, List<Output>>();
 	{
 		List<Output> outputList = new ArrayList<Output>();
 		outputList
@@ -118,6 +111,7 @@ public class MockCoinStackAdaptor {
 						"76a9140acd296e1ba0b5153623c3c55f2d5b45b1a25ce988ac"));
 		unspentOutputDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", outputList);
 	}
+	
 
 	public int getBestHeight() throws IOException {
 		return 345229;
@@ -145,6 +139,19 @@ public class MockCoinStackAdaptor {
 
 	public Output[] getUnspentOutputs(String address) throws IOException {
 		return unspentOutputDB.get(address).toArray(new Output[0]);
+	}
+
+	@Override
+	void init() {
+	}
+
+	@Override
+	void fini() {
+	}
+
+	@Override
+	void sendTransaction(String rawTransaction) throws IOException {
+		// do nothing
 	}
 
 }

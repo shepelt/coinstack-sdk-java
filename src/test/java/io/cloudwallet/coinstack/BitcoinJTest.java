@@ -67,6 +67,9 @@ public class BitcoinJTest {
 		tx.addSignedInput(prevOutPoint, prevOutScript, signingKey);
 		tx.verify();
 		byte[] rawTx = tx.bitcoinSerialize();
+		Transaction newTx = new Transaction(MainNetParams.get(), rawTx);
+		assertEquals(tx.getHashAsString(), newTx.getHashAsString());
+		System.out.println(newTx.getHashAsString());
 //		System.out.println(org.bitcoinj.core.Utils.HEX.encode(rawTx));
 		
 		// testing satoshi-coin conversion

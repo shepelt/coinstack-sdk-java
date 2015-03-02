@@ -1,11 +1,8 @@
 package io.cloudwallet.coinstack;
 
-import static org.junit.Assert.*;
-
-import org.junit.Test;
 
 public class CoinStackClientWithCloudWalletTestBackEndTest extends
-		CoinStackClientTest {
+		CoinStackClientWithCloudWalletBackEndTest {
 
 	@Override
 	public void setUp() throws Exception {
