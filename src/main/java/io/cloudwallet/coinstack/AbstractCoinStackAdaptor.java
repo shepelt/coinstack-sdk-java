@@ -23,6 +23,6 @@ public abstract class AbstractCoinStackAdaptor {
 
 	abstract Output[] getUnspentOutputs(String address) throws IOException;
 
-	abstract void sendTransaction(String rawTransaction) throws IOException;
+	abstract void sendTransaction(String rawTransaction) throws IOException, TransactionRejectedException;
 
 }

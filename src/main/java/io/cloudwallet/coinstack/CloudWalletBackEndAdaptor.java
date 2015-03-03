@@ -88,7 +88,6 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		HttpGet httpGet = new HttpGet(this.endpoint + "/api/blocks/" + blockId);
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
-		System.out.println(resJsonString);
 		JSONObject resJson;
 		try {
 			resJson = new JSONObject(resJsonString);
@@ -240,7 +239,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public void sendTransaction(String rawTransaction) throws IOException,
-			InvalidParameterException {
+			TransactionRejectedException {
 		// send tx
 		try {
 			String sendTxEndpoint = endpoint + ":9090/sendtx";
@@ -253,18 +252,14 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 			int status = statusLine.getStatusCode();
 
 			if (status == 409) {
-				throw new InvalidParameterException(
+				throw new TransactionRejectedException(
 						"Transaction already present in blockchain");
 			} else if (status == 200) {
 				// sending tx successful
-				System.out.println("tx sent");
 				return;
 			} else {
-				String resJsonString = EntityUtils.toString(res.getEntity());
-				System.out.println(resJsonString);
-				System.out.println(status);
-				System.out.println(statusLine.getReasonPhrase());
-				throw new IOException(statusLine.getReasonPhrase());
+				String errorMessage = EntityUtils.toString(res.getEntity());
+				throw new TransactionRejectedException("Transaction not accepted", new Throwable(errorMessage));
 			}
 		} catch (IOException e) {
 			throw new IOException("Broadcasting transaction failed", e);

@@ -8,9 +8,26 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.bitcoinj.core.Coin;
+import org.bitcoinj.core.DumpedPrivateKey;
+import org.bitcoinj.core.ECKey;
+import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.Sha256Hash;
+import org.bitcoinj.core.TransactionConfidence;
+import org.bitcoinj.core.TransactionOutput;
+import org.bitcoinj.core.Wallet;
+import org.bitcoinj.params.MainNetParams;
+import org.bitcoinj.wallet.WalletTransaction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author nepho
@@ -179,11 +196,13 @@ public class CoinStackClientTest {
 		assertEquals(4580000000L, outputs[0].getValue());
 		assertEquals("76a9140acd296e1ba0b5153623c3c55f2d5b45b1a25ce988ac",
 				outputs[0].getScript());
-		
+
 		// test validating addesses
-		assertTrue(CoinStackClient.validateAddress("1changeFu9bT4Bzbo8qQTcHS7pRfLcX1D"));
-		assertFalse(CoinStackClient.validateAddress("1A1zP1eP5QGefi2DMPTfssTL5SLmv7sisfN"));
-		
+		assertTrue(CoinStackClient
+				.validateAddress("1changeFu9bT4Bzbo8qQTcHS7pRfLcX1D"));
+		assertFalse(CoinStackClient
+				.validateAddress("1A1zP1eP5QGefi2DMPTfssTL5SLmv7sisfN"));
+
 		// create new private key and address
 		String newPrivateKeyWIF = CoinStackClient.createNewPrivateKey();
 		assertNotNull(newPrivateKeyWIF);
@@ -193,63 +212,90 @@ public class CoinStackClientTest {
 	}
 
 	@Test
-	public void testPickOutputNeeded() {
-		// outputs
-		Output[] outputBatch1 = { new Output("", 0, "", false, 2000l, ""),
-				new Output("", 0, "", false, 1000l, ""),
-				new Output("", 0, "", false, 3000l, ""),
-				new Output("", 0, "", false, 4000l, "") };
-		Output[] filtered1 = CoinStackClient.pickOutputsNeeded(outputBatch1,
-				1000l, 0);
-		assertNotNull(filtered1);
-		assertTrue(filtered1.length == 1);
-		assertEquals(1000l, filtered1[0].getValue());
+	public void testConstructTemporaryWallet() throws Exception {
+		ECKey signingKey = new DumpedPrivateKey(MainNetParams.get(),
+				"Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd")
+				.getKey();
 
-		Output[] filtered2 = CoinStackClient.pickOutputsNeeded(outputBatch1,
-				5000l, 0);
-		assertNotNull(filtered2);
-		assertTrue(filtered2.length == 3);
-		long sum = 0l;
-		for (Output output : filtered2) {
-			sum += output.getValue();
-		}
-		assertTrue(sum >= 5000l);
+		Wallet tempWallet = new Wallet(MainNetParams.get());
+		tempWallet.importKey(signingKey);
 
-		// borderline
-		Output[] filtered3 = CoinStackClient.pickOutputsNeeded(outputBatch1,
-				10000l, 0);
-		assertNotNull(filtered3);
-		assertTrue(filtered3.length == 4);
-		sum = 0l;
-		for (Output output : filtered3) {
-			sum += output.getValue();
-		}
-		assertTrue(sum >= 10000l);
-
-		// over flow
-		assertTrue(null == CoinStackClient.pickOutputsNeeded(outputBatch1,
-				110000l, 0));
-		assertTrue(null == CoinStackClient.pickOutputsNeeded(outputBatch1,
-				100000l, 1000));
-		assertTrue(null != CoinStackClient.pickOutputsNeeded(outputBatch1,
-				9000, 1000));
 	}
-	
+
+	private static class MockWallet extends Wallet {
+		private static final long serialVersionUID = 7820716411471123317L;
+		private Map<Sha256Hash, WalletTransaction> txMap = new HashMap<Sha256Hash, WalletTransaction>();
+
+		public Map<Sha256Hash, WalletTransaction> getTxMap() {
+			return txMap;
+		}
+
+		public MockWallet(NetworkParameters params) {
+			super(params);
+		}
+
+		@Override
+		public void addWalletTransaction(WalletTransaction wtx) {
+			txMap.put(wtx.getTransaction().getHash(), wtx);
+		}
+	}
+
 	@Test
-	public void testCalculateChange() {
-		Output[] outputBatch1 = { new Output("", 0, "", false, 2000l, ""),
-				new Output("", 0, "", false, 1000l, ""),
-				new Output("", 0, "", false, 3000l, ""),
-				new Output("", 0, "", false, 4000l, "") }; // sum of 10000l outputs
+	public void testAligningOutputs() throws Exception {
+		Output[] outputBatch1 = {
+				new Output(
+						"cc29ca30675676d101f2a0044ff14d69c09f586eb87be4808bbffe4d80302e86",
+						0, "", false, 2000l, "ffff"),
+				new Output(
+						"cc29ca30675676d101f2a0044ff14d69c09f586eb87be4808bbffe4d80302e86",
+						3, "", false, 1000l, "ffff"),
+				new Output(
+						"b72d2f5065bb91b42cb9288e500421f53f53dc38f59e978bfbb350545312c865",
+						3, "", false, 3000l, "ffff"),
+				new Output(
+						"45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e",
+						0, "", false, 4000l, "ffff") };
+		Logger logger = LoggerFactory.getLogger(Wallet.class);
 		
-		assertEquals(0l, CoinStackClient.calculateChange(outputBatch1, 10000l, 0l));
-		assertEquals(0l, CoinStackClient.calculateChange(outputBatch1, 9000l, 1000l));
-		assertEquals(1000l, CoinStackClient.calculateChange(outputBatch1, 9000l, 0l));
-		assertEquals(1000l, CoinStackClient.calculateChange(outputBatch1, 8000l, 1000l));
-		assertEquals(2000l, CoinStackClient.calculateChange(outputBatch1, 8000l, 0000l));
-		assertEquals(2000l, CoinStackClient.calculateChange(outputBatch1, 7000l, 1000l));
+		MockWallet wallet = new MockWallet(MainNetParams.get());
+		CoinStackClient.injectOutputs(wallet, outputBatch1);
+
+		assertEquals(3, wallet.getTxMap().size());
+
+		Output[] outputBatch2 = {
+				new Output(
+						"cc29ca30675676d101f2a0044ff14d69c09f586eb87be4808bbffe4d80302e86",
+						3, "", false, 1000l, "ffff"),
+				new Output(
+						"b72d2f5065bb91b42cb9288e500421f53f53dc38f59e978bfbb350545312c865",
+						3, "", false, 3000l, "ffff"),
+				new Output(
+						"cc29ca30675676d101f2a0044ff14d69c09f586eb87be4808bbffe4d80302e86",
+						0, "", false, 2000l, "ffff"),
+				new Output(
+						"45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e",
+						0, "", false, 4000l, "ffff") };
+		wallet = new MockWallet(MainNetParams.get());
+		CoinStackClient.injectOutputs(wallet, outputBatch1);
+
+		assertEquals(3, wallet.getTxMap().size());
+		int nonDummyOutputCount = 0;
+		for (TransactionOutput output : wallet
+				.getTxMap()
+				.get(new Sha256Hash(
+						CoinStackClient
+								.convertEndianness("cc29ca30675676d101f2a0044ff14d69c09f586eb87be4808bbffe4d80302e86")))
+				.getTransaction().getOutputs()) {
+			if (!output.getValue().equals(Coin.NEGATIVE_SATOSHI)) {
+				nonDummyOutputCount++;
+			}
+
+		}
+		assertEquals(2, nonDummyOutputCount);
+
 	}
-	
+
+
 	@Test
 	public void testConvertEndinaness() {
 		String original = "1234566780";
