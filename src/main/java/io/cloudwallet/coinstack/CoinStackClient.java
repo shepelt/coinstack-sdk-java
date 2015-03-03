@@ -25,12 +25,9 @@ import org.bitcoinj.core.Wallet.SendRequest;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.wallet.WalletTransaction;
 
-/**
- * @author nepho, shepelt
- *
- *         A client class for accessing Bitcoin Blockchain through CoinStack.
- *         Provides functionality for creating and managing Bitcoin addresses
- *         and transactions.
+/** 
+ * A client class for accessing Bitcoin Blockchain through CoinStack. Provides
+ * functionality for creating and managing Bitcoin addresses and transactions.
  */
 public class CoinStackClient {
 	private AbstractCoinStackAdaptor coinStackAdaptor;
