@@ -18,7 +18,7 @@ public class CoinStackClientWithCloudWalletBackEndTest extends
 	@Override
 	public void setUp() throws Exception {
 		coinStackClient = new CoinStackClient(new CloudWalletBackEndAdaptor(
-				"http://search.cloudwallet.io"));
+				"https://search.cloudwallet.io"));
 	}
 
 	@Test

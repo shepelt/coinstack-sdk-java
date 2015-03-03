@@ -38,7 +38,7 @@ public class CoinStackClient {
 
 	public CoinStackClient() {
 		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
-				"http://search.cloudwallet.io");
+				"https://search.cloudwallet.io");
 		coinStackAdaptor.init();
 	}
 
@@ -55,6 +55,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Fetch current Blockchain status
+	 * 
 	 * @return current status of Blockchain in BlockchainStatus object
 	 * @throws IOException
 	 *             in case of network failure
@@ -65,6 +67,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Fetch block information
+	 * 
 	 * @param blockId
 	 *            block ID (block hash) in string format
 	 * @return block information and related transaction
@@ -76,6 +80,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Fetch transaction informatino
+	 * 
 	 * @param transactionId
 	 *            transaction ID (transaction hash) in string format
 	 * @return transaction information, inputs, and outputs
@@ -87,6 +93,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Get transaction history associated with given address
+	 * 
 	 * @param address
 	 *            to view history of in string format
 	 * @return list of transaction IDs related to given address
@@ -98,6 +106,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Fetch current balance of given address
+	 * 
 	 * @param address
 	 *            to view balance of in string format
 	 * @return balance in satoshi format (e.g. 0.0001 BTC = 10000 satoshi)
@@ -109,6 +119,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Fetch unspent outputs of given address
+	 * 
 	 * @param address
 	 *            to view unspent received transaction outputs of
 	 * @return list of unspent transaction outputs
@@ -120,6 +132,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Construct a transaction for sending bitcoin and sign it using private key
+	 * 
 	 * @param privateKeyWIF
 	 *            private key in Wallet Import Format to sign transactino with
 	 * @param destinationAddress
@@ -191,6 +205,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Calculate transaction hash from raw transaction
+	 * 
 	 * @param rawTransaction
 	 *            transaction in hex-encoded string format
 	 * @return the hash (transaction ID) of given raw transaction
@@ -202,6 +218,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Construct a transaction object from raw transaction
+	 * 
 	 * @param rawTransaction
 	 *            transaction in hex-encoded string format
 	 * @return a transaction object representing the given raw transaction
@@ -232,6 +250,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Broadcast signed raw transaction to blockchain
+	 * 
 	 * @param rawTransaction
 	 *            a signed transaction in hex-encoded string format ready to be
 	 *            broadcasted
@@ -247,6 +267,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Convert human-readable bitcoin string (e.g. 0.0001 BTC) to satoshi unit
+	 * 
 	 * @param bitcoinAmount
 	 *            in human-friendly, string format (e.g. 0.0001 BTC)
 	 * @return bitcoin amount in satoshi
@@ -323,6 +345,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Get address associated with given private key
+	 * 
 	 * @param privateKeyWIF
 	 *            private key in Wallet Import Format
 	 * @return the address associated with the private key given
@@ -342,6 +366,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Randomly generate a new private key
+	 * 
 	 * @return a new private key in Wallet Import Format
 	 */
 	public static String createNewPrivateKey() {
@@ -350,6 +376,8 @@ public class CoinStackClient {
 	}
 
 	/**
+	 * Validate a given address
+	 * 
 	 * @param address
 	 *            in string format
 	 * @return whether given address is a valid bitcoin address
