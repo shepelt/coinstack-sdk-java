@@ -23,9 +23,10 @@ import org.bitcoinj.core.Wallet;
 import org.bitcoinj.core.Wallet.DustySendRequested;
 import org.bitcoinj.core.Wallet.SendRequest;
 import org.bitcoinj.params.MainNetParams;
+import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.wallet.WalletTransaction;
 
-/** 
+/**
  * A client class for accessing Bitcoin Blockchain through CoinStack. Provides
  * functionality for creating and managing Bitcoin addresses and transactions.
  */
@@ -154,10 +155,19 @@ public class CoinStackClient {
 			String destinationAddress, long amount, long fee)
 			throws IOException, InsufficientFundException,
 			DustyTransactionException {
+		return createRawTransaction(privateKeyWIF, destinationAddress, amount,
+				fee, true);
+	}
+
+	public String createRawTransaction(String privateKeyWIF,
+			String destinationAddress, long amount, long fee, boolean isMainNet)
+			throws IOException, InsufficientFundException,
+			DustyTransactionException {
 		// check sanity test for parameters
 		Address destinationAddressParsed;
+		NetworkParameters network = isMainNet ? MainNetParams.get() : TestNet3Params.get();
 		try {
-			destinationAddressParsed = new Address(MainNetParams.get(),
+			destinationAddressParsed = new Address(network,
 					destinationAddress);
 		} catch (AddressFormatException e) {
 			throw new MalformedInputException("Malformed destination address");
@@ -166,18 +176,18 @@ public class CoinStackClient {
 		// derive address from private key
 		final ECKey signingKey;
 		try {
-			signingKey = new DumpedPrivateKey(MainNetParams.get(),
+			signingKey = new DumpedPrivateKey(network,
 					privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {
 			throw new MalformedInputException("Parsing private key failed");
 		}
-		Address fromAddress = signingKey.toAddress(MainNetParams.get());
+		Address fromAddress = signingKey.toAddress(network);
 		String from = fromAddress.toString();
 
 		// get unspentout from address
 		Output[] outputs = this.getUnspentOutputs(from);
 
-		Wallet tempWallet = new Wallet(MainNetParams.get());
+		Wallet tempWallet = new Wallet(network);
 		tempWallet.allowSpendingUnconfirmedTransactions();
 		tempWallet.importKey(signingKey);
 		injectOutputs(tempWallet, outputs);
@@ -209,7 +219,13 @@ public class CoinStackClient {
 	 * @return the hash (transaction ID) of given raw transaction
 	 */
 	public static String getTransactionHash(String rawTransaction) {
-		return new org.bitcoinj.core.Transaction(MainNetParams.get(),
+		return getTransactionHash(rawTransaction, true);
+	}
+
+	public static String getTransactionHash(String rawTransaction,
+			boolean isMainNet) {
+		return new org.bitcoinj.core.Transaction(
+				isMainNet ? MainNetParams.get() : TestNet3Params.get(),
 				org.bitcoinj.core.Utils.HEX.decode(rawTransaction))
 				.getHashAsString();
 	}
@@ -222,8 +238,13 @@ public class CoinStackClient {
 	 * @return a transaction object representing the given raw transaction
 	 */
 	public static Transaction parseRawTransaction(String rawTransaction) {
+		return parseRawTransaction(rawTransaction, true);
+	}
+
+	public static Transaction parseRawTransaction(String rawTransaction,
+			boolean isMainNet) {
 		org.bitcoinj.core.Transaction tx = new org.bitcoinj.core.Transaction(
-				MainNetParams.get(),
+				isMainNet ? MainNetParams.get() : TestNet3Params.get(),
 				org.bitcoinj.core.Utils.HEX.decode(rawTransaction));
 		tx.getInputs();
 		tx.getOutputs();
@@ -352,14 +373,19 @@ public class CoinStackClient {
 	 */
 	public static String deriveAddress(String privateKeyWIF)
 			throws MalformedInputException {
+		return deriveAddress(privateKeyWIF, true);
+	}
+
+	public static String deriveAddress(String privateKeyWIF, boolean isMainNet)
+			throws MalformedInputException {
 		ECKey signingKey;
+		NetworkParameters network = isMainNet ? MainNetParams.get() : TestNet3Params.get();
 		try {
-			signingKey = new DumpedPrivateKey(MainNetParams.get(),
-					privateKeyWIF).getKey();
+			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {
 			throw new MalformedInputException("Parsing private key failed");
 		}
-		return signingKey.toAddress(MainNetParams.get()).toString();
+		return signingKey.toAddress(network).toString();
 	}
 
 	/**
@@ -368,8 +394,16 @@ public class CoinStackClient {
 	 * @return a new private key in Wallet Import Format
 	 */
 	public static String createNewPrivateKey() {
+		return createNewPrivateKey(true);
+	}
+
+	public static String createNewPrivateKey(boolean isMainNet) {
 		ECKey ecKey = new ECKey(secureRandom);
-		return ecKey.getPrivateKeyEncoded(MainNetParams.get()).toString();
+		if (isMainNet) {
+			return ecKey.getPrivateKeyEncoded(MainNetParams.get()).toString();
+		} else {
+			return ecKey.getPrivateKeyEncoded(TestNet3Params.get()).toString();
+		}
 	}
 
 	/**
@@ -380,8 +414,23 @@ public class CoinStackClient {
 	 * @return whether given address is a valid bitcoin address
 	 */
 	public static boolean validateAddress(String address) {
+		return validateAddress(address, true);
+	}
+
+	/**
+	 * Validate a given address
+	 * 
+	 * @param address
+	 *            in string format
+	 * @return whether given address is a valid bitcoin address
+	 */
+	public static boolean validateAddress(String address, boolean isMainNet) {
 		try {
-			new Address(MainNetParams.get(), address);
+			if (isMainNet) {
+				new Address(MainNetParams.get(), address);
+			} else {
+				new Address(TestNet3Params.get(), address);
+			}
 			return true;
 		} catch (Exception e) {
 			return false;
