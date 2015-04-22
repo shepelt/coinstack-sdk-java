@@ -154,4 +154,22 @@ public class MockTestnetCoinStackAdaptor extends AbstractCoinStackAdaptor {
 		// do nothing
 	}
 
+	@Override
+	Subscription[] listSubscriptions() throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	void deleteSubscription(String id) throws IOException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	String addSubscription(Subscription newSubscription) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

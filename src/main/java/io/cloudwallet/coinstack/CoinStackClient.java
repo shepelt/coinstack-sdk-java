@@ -39,12 +39,12 @@ public class CoinStackClient {
 	private AbstractCoinStackAdaptor coinStackAdaptor;
 	private static SecureRandom secureRandom = new SecureRandom();
 	private NetworkParameters network;
+
 	/**
-	 * Creates a CoinStack client instance that connects to mainnet endpoint 
+	 * Creates a CoinStack client instance that connects to mainnet endpoint
 	 */
 	public CoinStackClient() {
-		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
-				Endpoint.MAINNET);
+		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(Endpoint.MAINNET);
 		coinStackAdaptor.init();
 
 		this.network = MainNetParams.get();
@@ -53,27 +53,36 @@ public class CoinStackClient {
 	/**
 	 * Creates a CoinStack client instance with endpoint specified
 	 * 
-	 * @param endpoint endpoint to connect to (available: EndPoint.MAINNET, EndPoint.TESTNET)
+	 * @param endpoint
+	 *            endpoint to connect to (available: EndPoint.MAINNET,
+	 *            EndPoint.TESTNET)
 	 */
 	public CoinStackClient(Endpoint endpoint) {
-		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
-				endpoint);
+		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(endpoint);
 		coinStackAdaptor.init();
 
 		this.network = endpoint.mainnet() ? MainNetParams.get()
 				: TestNet3Params.get();
 	}
-	
+
 	/**
-	 * Creates a CoinStack client instance with endpoint specified and SSL parameters
+	 * Creates a CoinStack client instance with endpoint specified and SSL
+	 * parameters
 	 * 
-	 * @param endpoint endpoint to connect to (available: EndPoint.MAINNET, EndPoint.TESTNET) 
-	 * @param sslProtocols ssl protocols to enable for HTTPs connection (default: TLSv1.2, TLSv1)
-	 * @param sslCipherSuites ssl cipher suites to enable for HTTPs connection (default: TLS_DHE_RSA_WITH_AES_128_CBC_SHA)
+	 * @param endpoint
+	 *            endpoint to connect to (available: EndPoint.MAINNET,
+	 *            EndPoint.TESTNET)
+	 * @param sslProtocols
+	 *            ssl protocols to enable for HTTPs connection (default:
+	 *            TLSv1.2, TLSv1)
+	 * @param sslCipherSuites
+	 *            ssl cipher suites to enable for HTTPs connection (default:
+	 *            TLS_DHE_RSA_WITH_AES_128_CBC_SHA)
 	 */
-	public CoinStackClient(Endpoint endpoint, String[] sslProtocols, String[] sslCipherSuites) {
-		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
-				endpoint, sslProtocols, sslCipherSuites);
+	public CoinStackClient(Endpoint endpoint, String[] sslProtocols,
+			String[] sslCipherSuites) {
+		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(endpoint,
+				sslProtocols, sslCipherSuites);
 		coinStackAdaptor.init();
 
 		this.network = endpoint.mainnet() ? MainNetParams.get()
@@ -122,7 +131,7 @@ public class CoinStackClient {
 	}
 
 	/**
-	 * Fetch transaction informatino
+	 * Fetch transaction information
 	 * 
 	 * @param transactionId
 	 *            transaction ID (transaction hash) in string format
@@ -475,5 +484,18 @@ public class CoinStackClient {
 		} catch (Exception e) {
 			return false;
 		}
+	}
+
+	public Subscription[] listSubscriptions() throws IOException {
+		return coinStackAdaptor.listSubscriptions();
+	}
+
+	public void deleteSubscription(String id) throws IOException {
+		coinStackAdaptor.deleteSubscription(id);
+	}
+
+	public String addSubscription(Subscription newSubscription)
+			throws IOException {
+		return coinStackAdaptor.addSubscription(newSubscription);
 	}
 }

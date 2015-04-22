@@ -4,7 +4,7 @@
 package io.cloudwallet.coinstack;
 
 import java.io.IOException;
-import java.security.InvalidParameterException;
+import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -20,6 +20,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.config.Registry;
@@ -28,7 +29,7 @@ import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContexts;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
@@ -47,6 +48,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 			"TLSv1" };
 	private static final String[] defaultCipherSuites = new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" };
 	private String endpointURL;
+	private String monitorEndpointURL;
 	private HttpClient httpClient;
 	private Endpoint endpoint;
 	private String[] protocols;
@@ -62,8 +64,10 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		this.endpoint = endpoint;
 		if (endpoint != null) {
 			this.endpointURL = endpoint.endpoint();
+			this.monitorEndpointURL = endpoint.monitorEndpoint();
 		} else {
-			this.endpointURL = "http://search.cloudwallet.io";
+			this.endpointURL = "https://mainnet.cloudwallet.io";
+			this.monitorEndpointURL = "https://mainnetmonitor.cloudwallet.io";
 		}
 
 		this.protocols = protocols;
@@ -300,6 +304,85 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 				String errorMessage = EntityUtils.toString(res.getEntity());
 				throw new TransactionRejectedException(
 						"Transaction not accepted", new Throwable(errorMessage));
+			}
+		} catch (IOException e) {
+			throw new IOException("Broadcasting transaction failed", e);
+		}
+	}
+
+	@Override
+	Subscription[] listSubscriptions() throws IOException {
+		HttpGet httpGet = new HttpGet(this.monitorEndpointURL + "/"
+				+ getSubscriptionUsername() + "/subscriptions");
+		HttpResponse res = httpClient.execute(httpGet);
+		String resJsonString = EntityUtils.toString(res.getEntity());
+		JSONArray resJson;
+
+		List<Subscription> subscriptions = new LinkedList<Subscription>();
+		try {
+			resJson = new JSONArray(resJsonString);
+			for (int i = 0; i < resJson.length(); i++) {
+				JSONObject subscription = resJson.getJSONObject(i);
+				if (subscription.getInt("Type") == 1) {
+					// webhook subscription
+					subscriptions.add(new WebHookSubscription(subscription
+							.getString("Id"),
+							subscription.getString("Address"), subscription
+									.getString("Url")));
+				} else if (subscription.getInt("Type") == 2) {
+					// SNS subscription
+					subscriptions.add(new AmazonSNSSubscription(subscription
+							.getString("Id"),
+							subscription.getString("Address"), subscription
+									.getString("Region"), subscription
+									.getString("Topic")));
+				}
+			}
+		} catch (JSONException e) {
+			throw new IOException("Parsing response failed", e);
+		}
+		return subscriptions.toArray(new Subscription[0]);
+	}
+
+	private String getSubscriptionUsername() {
+		return "coinstackjavasdk";
+	}
+
+	@Override
+	void deleteSubscription(String id) throws IOException {
+		HttpDelete httpDelete = new HttpDelete(this.monitorEndpointURL + "/"
+				+ getSubscriptionUsername() + "/subscriptions" + id);
+		HttpResponse res = httpClient.execute(httpDelete);
+		StatusLine statusLine = res.getStatusLine();
+		int status = statusLine.getStatusCode();
+
+		if (status == 200) {
+			return;
+		} else {
+			throw new IOException("failed to delete given subscription");
+		}
+	}
+
+	@Override
+	String addSubscription(Subscription newSubscription) throws IOException {
+		// send tx
+		try {
+//			HttpPost httpPost = new HttpPost(this.monitorEndpointURL + "/"
+//					+ getSubscriptionUsername() + "/subscriptions");
+			HttpPost httpPost = new HttpPost("http://requestb.in/o87t0qo8?inspect");
+			JSONObject subscription = new JSONObject();
+			
+			
+			byte[] serializedSubscription = null;
+			httpPost.setEntity(new StringEntity(subscription.toString(), Charset.forName("UTF-8")));
+			HttpResponse res = httpClient.execute(httpPost);
+			StatusLine statusLine = res.getStatusLine();
+			int status = statusLine.getStatusCode();
+
+			if (status == 409) {
+				return "";
+			} else {
+				return "";
 			}
 		} catch (IOException e) {
 			throw new IOException("Broadcasting transaction failed", e);

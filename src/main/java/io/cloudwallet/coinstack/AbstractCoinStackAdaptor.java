@@ -25,4 +25,10 @@ public abstract class AbstractCoinStackAdaptor {
 
 	abstract void sendTransaction(String rawTransaction) throws IOException, TransactionRejectedException;
 
+	abstract Subscription[] listSubscriptions() throws IOException;
+
+	abstract void deleteSubscription(String id) throws IOException;
+
+	abstract String addSubscription(Subscription newSubscription) throws IOException;
+
 }

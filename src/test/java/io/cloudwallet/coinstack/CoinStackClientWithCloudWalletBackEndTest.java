@@ -3,7 +3,7 @@
  */
 package io.cloudwallet.coinstack;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -55,5 +55,48 @@ public class CoinStackClientWithCloudWalletBackEndTest extends
 				new String[] { "TLSv1.2", "TLSv1" },
 				new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" });
 		client.getBlockchainStatus();
+	}
+	
+	@Test
+	public void testSubscribe() throws Exception {
+		// list previous subscriptions
+		Subscription[] subscriptions = coinStackClient.listSubscriptions();
+		
+		for (Subscription subscription : subscriptions) {
+			coinStackClient.deleteSubscription(subscription.getId());
+		}
+		
+		// wait for a bit
+		Thread.sleep(1000);
+		
+		Subscription newSubscription = new WebHookSubscription("1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168", "http://requestb.in/o87t0qo8?inspect");
+		String subscriptionId = coinStackClient.addSubscription(newSubscription);
+		assertNotNull(subscriptionId);
+		
+		subscriptions = coinStackClient.listSubscriptions();
+		assertEquals(1, subscriptions.length); // there should be only one subscription
+		assertEquals(subscriptionId, subscriptions[0].getId());
+//		// wait for a bit
+//		Thread.sleep(1000);
+//		
+//		// make transaction to address
+//		String privateKeyWIF = "Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd";
+//		String to = "1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168";
+//		long amount = CoinStackClient.convertToSatoshi("0.0001");
+//		long fee = CoinStackClient.convertToSatoshi("0.0001");
+//		String rawTx = coinStackClient.createRawTransaction(privateKeyWIF, to,
+//				amount, fee);
+//		assertNotNull(rawTx);
+//		System.out.println(rawTx);
+//		assertNotNull(CoinStackClient.getTransactionHash(rawTx));
+//		System.out.println(CoinStackClient.getTransactionHash(rawTx));
+//
+//		// try sending raw tx
+//		try {
+//			 coinStackClient.sendTransaction(rawTx);
+//		} catch (Exception e) {
+//			System.out.println(e);
+//			Assert.fail("sending tx failed");
+//		}
 	}
 }

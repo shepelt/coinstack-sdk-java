@@ -8,7 +8,12 @@ public enum Endpoint {
 	MAINNET() {
 		@Override
 		protected String endpoint() {
-			return "https://search.cloudwallet.io";
+			return "https://mainnet.cloudwallet.io";
+		}
+
+		@Override
+		protected String monitorEndpoint() {
+			return "https://mainnetmonitor.cloudwallet.io";
 		}
 
 		@Override
@@ -23,19 +28,31 @@ public enum Endpoint {
 		}
 
 		@Override
+		protected String monitorEndpoint() {
+			return "https://testnetmonitor.cloudwallet.io";
+		}
+
+		@Override
 		protected boolean mainnet() {
 			return false;
 		}
 	};
 	private PublicKey key;
+
 	protected PublicKey getPublicKey() {
 		return this.key;
 	}
+
 	protected void setPublicKey(PublicKey key) {
 		this.key = key;
 	}
+
 	protected abstract String endpoint();
+
+	protected abstract String monitorEndpoint();
+
 	protected abstract boolean mainnet();
+
 	private static boolean initialized = false;
 
 	public static void init() throws IOException {
