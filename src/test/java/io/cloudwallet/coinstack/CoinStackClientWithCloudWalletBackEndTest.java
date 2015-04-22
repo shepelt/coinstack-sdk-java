@@ -18,7 +18,7 @@ public class CoinStackClientWithCloudWalletBackEndTest extends
 	@Override
 	public void setUp() throws Exception {
 		coinStackClient = new CoinStackClient(new CloudWalletBackEndAdaptor(
-				"https://search.cloudwallet.io"));
+				Endpoint.MAINNET), true);
 	}
 
 	@Test
@@ -47,5 +47,13 @@ public class CoinStackClientWithCloudWalletBackEndTest extends
 		assertNotNull(tx);
 		assertNotNull(tx.getOutputs()[0].getAddress());
 
+	}
+
+	@Test
+	public void testSSLParameters() throws Exception {
+		CoinStackClient client = new CoinStackClient(Endpoint.MAINNET,
+				new String[] { "TLSv1.2", "TLSv1" },
+				new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" });
+		client.getBlockchainStatus();
 	}
 }

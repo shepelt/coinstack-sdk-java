@@ -41,7 +41,7 @@ public class CoinStackClientWithTestnetTest {
 	 */
 	@Before
 	public void setUp() throws Exception {
-		coinStackClient = new CoinStackClient(new MockTestnetCoinStackAdaptor());
+		coinStackClient = new CoinStackClient(new MockTestnetCoinStackAdaptor(), false);
 	}
 
 	/**
@@ -117,7 +117,7 @@ public class CoinStackClientWithTestnetTest {
 		assertTrue(transaction.isCoinbase());
 		assertEquals(0, transaction.getInputs().length);
 		assertEquals(1, transaction.getOutputs().length);
-		assertEquals("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+		assertEquals("mpXwg4jMtRhuSpVq4xS3HFHmCmWp9NyGKt",
 				transaction.getOutputs()[0].getAddress());
 		assertEquals(5000000000l, transaction.getOutputs()[0].getValue());
 		assertEquals(

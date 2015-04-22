@@ -13,6 +13,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
+import javax.net.ssl.SSLContext;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
@@ -20,7 +22,15 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
@@ -33,21 +43,49 @@ import org.json.JSONObject;
  */
 public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
-	private String endpoint;
+	private static final String[] defaultProtocols = new String[] { "TLSv1.2",
+			"TLSv1" };
+	private static final String[] defaultCipherSuites = new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" };
+	private String endpointURL;
 	private HttpClient httpClient;
+	private Endpoint endpoint;
+	private String[] protocols;
+	private String[] cipherSuites;
 
-	public CloudWalletBackEndAdaptor(String endpoint) {
+	public CloudWalletBackEndAdaptor(Endpoint endpoint) {
+		this(endpoint, defaultProtocols, defaultCipherSuites);
+	}
+
+	public CloudWalletBackEndAdaptor(Endpoint endpoint, String[] protocols,
+			String[] cipherSuites) {
 		super();
+		this.endpoint = endpoint;
 		if (endpoint != null) {
-			this.endpoint = endpoint;
+			this.endpointURL = endpoint.endpoint();
 		} else {
-			this.endpoint = "http://search.cloudwallet.io";
+			this.endpointURL = "http://search.cloudwallet.io";
 		}
+
+		this.protocols = protocols;
+		this.cipherSuites = cipherSuites;
 	}
 
 	@Override
 	public void init() {
-		httpClient = new DefaultHttpClient();
+		// initialize public key verifier
+		PublicKeyVerifier hostnameVerifier = new PublicKeyVerifier(
+				this.endpoint);
+		SSLContext context = SSLContexts.createDefault();
+		SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(
+				context, protocols, cipherSuites, hostnameVerifier);
+		Registry<ConnectionSocketFactory> registry = RegistryBuilder
+				.<ConnectionSocketFactory> create()
+				.register("https", sslConnectionFactory).build();
+		HttpClientConnectionManager connManager = new BasicHttpClientConnectionManager(
+				registry);
+		HttpClientBuilder builder = HttpClientBuilder.create();
+		builder.setConnectionManager(connManager);
+		httpClient = builder.build();
 	}
 
 	@Override
@@ -57,7 +95,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public int getBestHeight() throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint + "/api/bestheight");
+		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/bestheight");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
@@ -71,7 +109,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public String getBestBlockHash() throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint + "/api/besthash");
+		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/besthash");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
@@ -85,7 +123,8 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public Block getBlock(String blockId) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint + "/api/blocks/" + blockId);
+		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/blocks/"
+				+ blockId);
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
@@ -122,7 +161,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public Transaction getTransaction(String transactionId) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint + "/api/transactions/"
+		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/transactions/"
 				+ transactionId);
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
@@ -180,7 +219,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public String[] getTransactions(String address) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint + "/api/" + address
+		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/" + address
 				+ "/history");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
@@ -201,7 +240,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public long getBalance(String address) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint + "/api/" + address
+		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/" + address
 				+ "/balance");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
@@ -216,7 +255,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public Output[] getUnspentOutputs(String address) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint + "/api/" + address
+		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/" + address
 				+ "/unspentoutputs");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
@@ -242,7 +281,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 			TransactionRejectedException {
 		// send tx
 		try {
-			String sendTxEndpoint = endpoint + ":9090/sendtx";
+			String sendTxEndpoint = endpointURL + ":9090/sendtx";
 			HttpPost httpPost = new HttpPost(sendTxEndpoint);
 			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
 			nameValuePairs.add(new BasicNameValuePair("tx", rawTransaction));
@@ -259,7 +298,8 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 				return;
 			} else {
 				String errorMessage = EntityUtils.toString(res.getEntity());
-				throw new TransactionRejectedException("Transaction not accepted", new Throwable(errorMessage));
+				throw new TransactionRejectedException(
+						"Transaction not accepted", new Throwable(errorMessage));
 			}
 		} catch (IOException e) {
 			throw new IOException("Broadcasting transaction failed", e);

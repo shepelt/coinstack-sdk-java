@@ -4,10 +4,15 @@
 package io.cloudwallet.coinstack;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyFactory;
+import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.apache.commons.io.IOUtils;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Coin;
@@ -33,16 +38,53 @@ import org.bitcoinj.wallet.WalletTransaction;
 public class CoinStackClient {
 	private AbstractCoinStackAdaptor coinStackAdaptor;
 	private static SecureRandom secureRandom = new SecureRandom();
-
+	private NetworkParameters network;
+	/**
+	 * Creates a CoinStack client instance that connects to mainnet endpoint 
+	 */
 	public CoinStackClient() {
 		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
-				"https://search.cloudwallet.io");
+				Endpoint.MAINNET);
 		coinStackAdaptor.init();
+
+		this.network = MainNetParams.get();
+	};
+
+	/**
+	 * Creates a CoinStack client instance with endpoint specified
+	 * 
+	 * @param endpoint endpoint to connect to (available: EndPoint.MAINNET, EndPoint.TESTNET)
+	 */
+	public CoinStackClient(Endpoint endpoint) {
+		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
+				endpoint);
+		coinStackAdaptor.init();
+
+		this.network = endpoint.mainnet() ? MainNetParams.get()
+				: TestNet3Params.get();
+	}
+	
+	/**
+	 * Creates a CoinStack client instance with endpoint specified and SSL parameters
+	 * 
+	 * @param endpoint endpoint to connect to (available: EndPoint.MAINNET, EndPoint.TESTNET) 
+	 * @param sslProtocols ssl protocols to enable for HTTPs connection (default: TLSv1.2, TLSv1)
+	 * @param sslCipherSuites ssl cipher suites to enable for HTTPs connection (default: TLS_DHE_RSA_WITH_AES_128_CBC_SHA)
+	 */
+	public CoinStackClient(Endpoint endpoint, String[] sslProtocols, String[] sslCipherSuites) {
+		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
+				endpoint, sslProtocols, sslCipherSuites);
+		coinStackAdaptor.init();
+
+		this.network = endpoint.mainnet() ? MainNetParams.get()
+				: TestNet3Params.get();
 	}
 
-	protected CoinStackClient(AbstractCoinStackAdaptor coinStackAdaptor) {
+	protected CoinStackClient(AbstractCoinStackAdaptor coinStackAdaptor,
+			boolean isMainNet) {
 		this.coinStackAdaptor = coinStackAdaptor;
 		coinStackAdaptor.init();
+		network = isMainNet ? MainNetParams.get() : TestNet3Params.get();
 	}
 
 	/**
@@ -60,6 +102,7 @@ public class CoinStackClient {
 	 *             in case of network failure
 	 */
 	public BlockchainStatus getBlockchainStatus() throws IOException {
+		Endpoint.init();
 		return new BlockchainStatus(coinStackAdaptor.getBestHeight(),
 				coinStackAdaptor.getBestBlockHash());
 	}
@@ -74,6 +117,7 @@ public class CoinStackClient {
 	 *             in case of network failure
 	 */
 	public Block getBlock(String blockId) throws IOException {
+		Endpoint.init();
 		return coinStackAdaptor.getBlock(blockId);
 	}
 
@@ -87,6 +131,7 @@ public class CoinStackClient {
 	 *             in case of network failure
 	 */
 	public Transaction getTransaction(String transactionId) throws IOException {
+		Endpoint.init();
 		return coinStackAdaptor.getTransaction(transactionId);
 	}
 
@@ -100,6 +145,7 @@ public class CoinStackClient {
 	 *             in case of network failure
 	 */
 	public String[] getTransactions(String address) throws IOException {
+		Endpoint.init();
 		return coinStackAdaptor.getTransactions(address);
 	}
 
@@ -113,6 +159,7 @@ public class CoinStackClient {
 	 *             in case of network failure
 	 */
 	public long getBalance(String address) throws IOException {
+		Endpoint.init();
 		return coinStackAdaptor.getBalance(address);
 	}
 
@@ -126,6 +173,7 @@ public class CoinStackClient {
 	 *             in case of network failure
 	 */
 	public Output[] getUnspentOutputs(String address) throws IOException {
+		Endpoint.init();
 		return coinStackAdaptor.getUnspentOutputs(address);
 	}
 
@@ -155,20 +203,11 @@ public class CoinStackClient {
 			String destinationAddress, long amount, long fee)
 			throws IOException, InsufficientFundException,
 			DustyTransactionException {
-		return createRawTransaction(privateKeyWIF, destinationAddress, amount,
-				fee, true);
-	}
-
-	public String createRawTransaction(String privateKeyWIF,
-			String destinationAddress, long amount, long fee, boolean isMainNet)
-			throws IOException, InsufficientFundException,
-			DustyTransactionException {
+		Endpoint.init();
 		// check sanity test for parameters
 		Address destinationAddressParsed;
-		NetworkParameters network = isMainNet ? MainNetParams.get() : TestNet3Params.get();
 		try {
-			destinationAddressParsed = new Address(network,
-					destinationAddress);
+			destinationAddressParsed = new Address(network, destinationAddress);
 		} catch (AddressFormatException e) {
 			throw new MalformedInputException("Malformed destination address");
 		}
@@ -176,8 +215,7 @@ public class CoinStackClient {
 		// derive address from private key
 		final ECKey signingKey;
 		try {
-			signingKey = new DumpedPrivateKey(network,
-					privateKeyWIF).getKey();
+			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {
 			throw new MalformedInputException("Parsing private key failed");
 		}
@@ -281,6 +319,7 @@ public class CoinStackClient {
 	 */
 	public void sendTransaction(String rawTransaction) throws IOException,
 			TransactionRejectedException {
+		Endpoint.init();
 		coinStackAdaptor.sendTransaction(rawTransaction);
 	}
 
@@ -379,7 +418,8 @@ public class CoinStackClient {
 	public static String deriveAddress(String privateKeyWIF, boolean isMainNet)
 			throws MalformedInputException {
 		ECKey signingKey;
-		NetworkParameters network = isMainNet ? MainNetParams.get() : TestNet3Params.get();
+		NetworkParameters network = isMainNet ? MainNetParams.get()
+				: TestNet3Params.get();
 		try {
 			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {

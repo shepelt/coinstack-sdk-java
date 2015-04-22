@@ -41,7 +41,7 @@ public class CoinStackClientTest {
 	 */
 	@Before
 	public void setUp() throws Exception {
-		coinStackClient = new CoinStackClient(new MockCoinStackAdaptor());
+		coinStackClient = new CoinStackClient(new MockCoinStackAdaptor(), true);
 	}
 
 	/**

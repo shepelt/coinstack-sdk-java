@@ -10,7 +10,7 @@ public class CoinStackClientWithCloudWalletTestnetBackEndTest extends
 	@Override
 	public void setUp() throws Exception {
 		coinStackClient = new CoinStackClient(new CloudWalletBackEndAdaptor(
-				"https://testnet.cloudwallet.io"));
+				Endpoint.TESTNET), false);
 	}
 	
 	@Test
@@ -20,7 +20,7 @@ public class CoinStackClientWithCloudWalletTestnetBackEndTest extends
 		long amount = CoinStackClient.convertToSatoshi("0.0001");
 		long fee = CoinStackClient.convertToSatoshi("0.0001");
 		String rawTx = coinStackClient.createRawTransaction(privateKeyWIF, to,
-				amount, fee, false);
+				amount, fee);
 		assertNotNull(rawTx);
 		System.out.println(rawTx);
 		assertNotNull(CoinStackClient.getTransactionHash(rawTx, false));
