@@ -1,5 +1,8 @@
 package io.cloudwallet.coinstack;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class WebHookSubscription extends Subscription {
 
 	private String url;
@@ -16,5 +19,14 @@ public class WebHookSubscription extends Subscription {
 
 	public String getUrl() {
 		return url;
+	}
+
+	@Override
+	public String toJsonString() throws JSONException {
+		JSONObject json = new JSONObject();
+		json.put("type", 1);
+		json.put("address", this.getAddress());
+		json.put("url", this.getUrl());
+		return json.toString();
 	}
 }

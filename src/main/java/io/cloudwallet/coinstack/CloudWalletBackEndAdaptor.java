@@ -27,6 +27,7 @@ import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.entity.StringEntity;
@@ -44,11 +45,11 @@ import org.json.JSONObject;
  */
 public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
-	private static final String[] defaultProtocols = new String[] { "TLSv1.2",
-			"TLSv1" };
+	private static final String[] defaultProtocols = new String[] { "TLSv1" };
 	private static final String[] defaultCipherSuites = new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" };
 	private String endpointURL;
 	private String monitorEndpointURL;
+	private String broadcastEndpointURL;
 	private HttpClient httpClient;
 	private Endpoint endpoint;
 	private String[] protocols;
@@ -65,9 +66,11 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		if (endpoint != null) {
 			this.endpointURL = endpoint.endpoint();
 			this.monitorEndpointURL = endpoint.monitorEndpoint();
+			this.broadcastEndpointURL = endpoint.broadcastEndpoint();
 		} else {
 			this.endpointURL = "https://mainnet.cloudwallet.io";
 			this.monitorEndpointURL = "https://mainnetmonitor.cloudwallet.io";
+			this.broadcastEndpointURL = "http://search.cloudwallet.io:9090/sendtx";
 		}
 
 		this.protocols = protocols;
@@ -82,9 +85,11 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		SSLContext context = SSLContexts.createDefault();
 		SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(
 				context, protocols, cipherSuites, hostnameVerifier);
+		ConnectionSocketFactory plainConnectionSocketFactory = new PlainConnectionSocketFactory();
 		Registry<ConnectionSocketFactory> registry = RegistryBuilder
 				.<ConnectionSocketFactory> create()
-				.register("https", sslConnectionFactory).build();
+				.register("https", sslConnectionFactory)
+				.register("http", plainConnectionSocketFactory).build();
 		HttpClientConnectionManager connManager = new BasicHttpClientConnectionManager(
 				registry);
 		HttpClientBuilder builder = HttpClientBuilder.create();
@@ -263,6 +268,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 				+ "/unspentoutputs");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
+		EntityUtils.consume(res.getEntity());
 		JSONArray resJson;
 
 		List<Output> outputs = new LinkedList<Output>();
@@ -285,8 +291,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 			TransactionRejectedException {
 		// send tx
 		try {
-			String sendTxEndpoint = endpointURL + ":9090/sendtx";
-			HttpPost httpPost = new HttpPost(sendTxEndpoint);
+			HttpPost httpPost = new HttpPost(broadcastEndpointURL);
 			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
 			nameValuePairs.add(new BasicNameValuePair("tx", rawTransaction));
 			httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
@@ -302,6 +307,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 				return;
 			} else {
 				String errorMessage = EntityUtils.toString(res.getEntity());
+				EntityUtils.consume(res.getEntity());
 				throw new TransactionRejectedException(
 						"Transaction not accepted", new Throwable(errorMessage));
 			}
@@ -316,6 +322,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 				+ getSubscriptionUsername() + "/subscriptions");
 		HttpResponse res = httpClient.execute(httpGet);
 		String resJsonString = EntityUtils.toString(res.getEntity());
+		EntityUtils.consume(res.getEntity());
 		JSONArray resJson;
 
 		List<Subscription> subscriptions = new LinkedList<Subscription>();
@@ -351,11 +358,11 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 	@Override
 	void deleteSubscription(String id) throws IOException {
 		HttpDelete httpDelete = new HttpDelete(this.monitorEndpointURL + "/"
-				+ getSubscriptionUsername() + "/subscriptions" + id);
+				+ getSubscriptionUsername() + "/subscriptions/" + id);
 		HttpResponse res = httpClient.execute(httpDelete);
 		StatusLine statusLine = res.getStatusLine();
 		int status = statusLine.getStatusCode();
-
+		EntityUtils.consume(res.getEntity());
 		if (status == 200) {
 			return;
 		} else {
@@ -367,25 +374,33 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 	String addSubscription(Subscription newSubscription) throws IOException {
 		// send tx
 		try {
-//			HttpPost httpPost = new HttpPost(this.monitorEndpointURL + "/"
-//					+ getSubscriptionUsername() + "/subscriptions");
-			HttpPost httpPost = new HttpPost("http://requestb.in/o87t0qo8?inspect");
-			JSONObject subscription = new JSONObject();
-			
-			
-			byte[] serializedSubscription = null;
-			httpPost.setEntity(new StringEntity(subscription.toString(), Charset.forName("UTF-8")));
+			HttpPost httpPost = new HttpPost(this.monitorEndpointURL + "/"
+					+ getSubscriptionUsername() + "/subscriptions");
+			httpPost.setEntity(new StringEntity(newSubscription.toJsonString(),
+					Charset.forName("UTF-8")));
 			HttpResponse res = httpClient.execute(httpPost);
 			StatusLine statusLine = res.getStatusLine();
 			int status = statusLine.getStatusCode();
 
-			if (status == 409) {
-				return "";
+			if (status == 200) {
+				// read result to extract id
+				String resJsonString = EntityUtils.toString(res.getEntity());
+				EntityUtils.consume(res.getEntity());
+				JSONObject resJson;
+				try {
+					resJson = new JSONObject(resJsonString);
+					return resJson.getString("id");
+				} catch (JSONException e) {
+					throw new IOException("Parsing response failed", e);
+				}
 			} else {
-				return "";
+				res.getEntity().getContent().close();
+				throw new IOException("failed to add subscription");
 			}
 		} catch (IOException e) {
-			throw new IOException("Broadcasting transaction failed", e);
+			throw new IOException("Failed to add subscription", e);
+		} catch (JSONException e) {
+			throw new IOException("Failed to marhsall subscription", e);
 		}
 	}
 }

@@ -36,7 +36,7 @@ public class CoinStackClientWithCloudWalletBackEndTest extends
 
 		// try sending raw tx
 		try {
-			// coinStackClient.sendTransaction(rawTx);
+			 coinStackClient.sendTransaction(rawTx);
 		} catch (Exception e) {
 			System.out.println(e);
 			Assert.fail("sending tx failed");
@@ -52,7 +52,7 @@ public class CoinStackClientWithCloudWalletBackEndTest extends
 	@Test
 	public void testSSLParameters() throws Exception {
 		CoinStackClient client = new CoinStackClient(Endpoint.MAINNET,
-				new String[] { "TLSv1.2", "TLSv1" },
+				new String[] { "TLSv1" },
 				new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" });
 		client.getBlockchainStatus();
 	}
@@ -61,42 +61,49 @@ public class CoinStackClientWithCloudWalletBackEndTest extends
 	public void testSubscribe() throws Exception {
 		// list previous subscriptions
 		Subscription[] subscriptions = coinStackClient.listSubscriptions();
-		
+		System.out.println("listing subscriptions");
 		for (Subscription subscription : subscriptions) {
+			System.out.println(subscription.getId());
 			coinStackClient.deleteSubscription(subscription.getId());
 		}
 		
 		// wait for a bit
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 		
-		Subscription newSubscription = new WebHookSubscription("1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168", "http://requestb.in/o87t0qo8?inspect");
+		System.out.println("registering a new subscription");
+		
+		
+		Subscription newSubscription = new WebHookSubscription("1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168", "http://requestb.in/o87t0qo8");
 		String subscriptionId = coinStackClient.addSubscription(newSubscription);
 		assertNotNull(subscriptionId);
 		
+		System.out.println("listing subscriptions");
 		subscriptions = coinStackClient.listSubscriptions();
 		assertEquals(1, subscriptions.length); // there should be only one subscription
 		assertEquals(subscriptionId, subscriptions[0].getId());
-//		// wait for a bit
+		// wait for a bit
 //		Thread.sleep(1000);
-//		
-//		// make transaction to address
-//		String privateKeyWIF = "Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd";
-//		String to = "1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168";
-//		long amount = CoinStackClient.convertToSatoshi("0.0001");
-//		long fee = CoinStackClient.convertToSatoshi("0.0001");
-//		String rawTx = coinStackClient.createRawTransaction(privateKeyWIF, to,
-//				amount, fee);
-//		assertNotNull(rawTx);
-//		System.out.println(rawTx);
-//		assertNotNull(CoinStackClient.getTransactionHash(rawTx));
-//		System.out.println(CoinStackClient.getTransactionHash(rawTx));
-//
-//		// try sending raw tx
-//		try {
-//			 coinStackClient.sendTransaction(rawTx);
-//		} catch (Exception e) {
-//			System.out.println(e);
-//			Assert.fail("sending tx failed");
-//		}
+		
+		System.out.println("broadcasting tx");
+		
+		// make transaction to address
+		String privateKeyWIF = "Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd";
+		String to = "1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168";
+		long amount = CoinStackClient.convertToSatoshi("0.0001");
+		long fee = CoinStackClient.convertToSatoshi("0.0001");
+		String rawTx = coinStackClient.createRawTransaction(privateKeyWIF, to,
+				amount, fee);
+		assertNotNull(rawTx);
+		System.out.println(rawTx);
+		assertNotNull(CoinStackClient.getTransactionHash(rawTx));
+		System.out.println(CoinStackClient.getTransactionHash(rawTx));
+
+		// try sending raw tx
+		try {
+			 coinStackClient.sendTransaction(rawTx);
+		} catch (Exception e) {
+			System.out.println(e);
+			Assert.fail("sending tx failed");
+		}
 	}
 }

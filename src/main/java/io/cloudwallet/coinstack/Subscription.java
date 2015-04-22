@@ -1,5 +1,7 @@
 package io.cloudwallet.coinstack;
 
+import org.json.JSONException;
+
 public abstract class Subscription {
 
 	private String address;
@@ -21,4 +23,6 @@ public abstract class Subscription {
 	public String getId() {
 		return id;
 	}
+
+	abstract public String toJsonString() throws JSONException;
 }

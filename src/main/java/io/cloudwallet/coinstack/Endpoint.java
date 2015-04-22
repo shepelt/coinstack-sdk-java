@@ -20,6 +20,11 @@ public enum Endpoint {
 		protected boolean mainnet() {
 			return true;
 		}
+
+		@Override
+		protected String broadcastEndpoint() {
+			return "http://search.cloudwallet.io:9090/sendtx";
+		}
 	},
 	TESTNET() {
 		@Override
@@ -36,6 +41,11 @@ public enum Endpoint {
 		protected boolean mainnet() {
 			return false;
 		}
+
+		@Override
+		protected String broadcastEndpoint() {
+			return "";
+		}
 	};
 	private PublicKey key;
 
@@ -50,6 +60,8 @@ public enum Endpoint {
 	protected abstract String endpoint();
 
 	protected abstract String monitorEndpoint();
+	
+	protected abstract String broadcastEndpoint();
 
 	protected abstract boolean mainnet();
 
