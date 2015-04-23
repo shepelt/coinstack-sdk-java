@@ -44,7 +44,8 @@ public class CoinStackClient {
 	 * Creates a CoinStack client instance that connects to mainnet endpoint
 	 */
 	public CoinStackClient() {
-		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(Endpoint.MAINNET);
+		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
+				new EnvironmentVariableCredentialsProvider(), Endpoint.MAINNET);
 		coinStackAdaptor.init();
 
 		this.network = MainNetParams.get();
@@ -57,8 +58,9 @@ public class CoinStackClient {
 	 *            endpoint to connect to (available: EndPoint.MAINNET,
 	 *            EndPoint.TESTNET)
 	 */
-	public CoinStackClient(Endpoint endpoint) {
-		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(endpoint);
+	public CoinStackClient(CredentialsProvider provider, Endpoint endpoint) {
+		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(provider,
+				endpoint);
 		coinStackAdaptor.init();
 
 		this.network = endpoint.mainnet() ? MainNetParams.get()
@@ -79,10 +81,10 @@ public class CoinStackClient {
 	 *            ssl cipher suites to enable for HTTPs connection (default:
 	 *            TLS_DHE_RSA_WITH_AES_128_CBC_SHA)
 	 */
-	public CoinStackClient(Endpoint endpoint, String[] sslProtocols,
-			String[] sslCipherSuites) {
-		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(endpoint,
-				sslProtocols, sslCipherSuites);
+	public CoinStackClient(CredentialsProvider provider, Endpoint endpoint,
+			String[] sslProtocols, String[] sslCipherSuites) {
+		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(provider,
+				endpoint, sslProtocols, sslCipherSuites);
 		coinStackAdaptor.init();
 
 		this.network = endpoint.mainnet() ? MainNetParams.get()
@@ -487,15 +489,18 @@ public class CoinStackClient {
 	}
 
 	public Subscription[] listSubscriptions() throws IOException {
+		Endpoint.init();
 		return coinStackAdaptor.listSubscriptions();
 	}
 
 	public void deleteSubscription(String id) throws IOException {
+		Endpoint.init();
 		coinStackAdaptor.deleteSubscription(id);
 	}
 
 	public String addSubscription(Subscription newSubscription)
 			throws IOException {
+		Endpoint.init();
 		return coinStackAdaptor.addSubscription(newSubscription);
 	}
 }

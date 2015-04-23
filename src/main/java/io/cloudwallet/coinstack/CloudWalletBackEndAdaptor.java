@@ -23,6 +23,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.HttpClientConnectionManager;
@@ -54,14 +55,19 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 	private Endpoint endpoint;
 	private String[] protocols;
 	private String[] cipherSuites;
+	private String accessKey = "";
+	private String secretKey = "";
+	private CredentialsProvider credentialProvider;
 
-	public CloudWalletBackEndAdaptor(Endpoint endpoint) {
-		this(endpoint, defaultProtocols, defaultCipherSuites);
+	public CloudWalletBackEndAdaptor(CredentialsProvider provider,
+			Endpoint endpoint) {
+		this(provider, endpoint, defaultProtocols, defaultCipherSuites);
 	}
 
-	public CloudWalletBackEndAdaptor(Endpoint endpoint, String[] protocols,
-			String[] cipherSuites) {
+	public CloudWalletBackEndAdaptor(CredentialsProvider provider,
+			Endpoint endpoint, String[] protocols, String[] cipherSuites) {
 		super();
+		this.credentialProvider = provider;
 		this.endpoint = endpoint;
 		if (endpoint != null) {
 			this.endpointURL = endpoint.endpoint();
@@ -316,11 +322,23 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		}
 	}
 
+
+	private static void setAuth(HttpRequestBase http,
+			CredentialsProvider credentialProvider) {
+		http.setHeader("APIKey", credentialProvider.getAccessKey());
+		http.setHeader("SecretKey", credentialProvider.getSecretKey());
+	}
+	
 	@Override
 	Subscription[] listSubscriptions() throws IOException {
-		HttpGet httpGet = new HttpGet(this.monitorEndpointURL + "/"
-				+ getSubscriptionUsername() + "/subscriptions");
+		HttpGet httpGet = new HttpGet(this.monitorEndpointURL + "/subscriptions");
+		setAuth(httpGet, credentialProvider);
 		HttpResponse res = httpClient.execute(httpGet);
+		
+		if (res.getStatusLine().getStatusCode() == 401) {
+			throw new IOException("Failed to authorize request");
+		}
+		
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		EntityUtils.consume(res.getEntity());
 		JSONArray resJson;
@@ -351,15 +369,14 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		return subscriptions.toArray(new Subscription[0]);
 	}
 
-	private String getSubscriptionUsername() {
-		return "coinstackjavasdk";
-	}
-
 	@Override
 	void deleteSubscription(String id) throws IOException {
-		HttpDelete httpDelete = new HttpDelete(this.monitorEndpointURL + "/"
-				+ getSubscriptionUsername() + "/subscriptions/" + id);
+		HttpDelete httpDelete = new HttpDelete(this.monitorEndpointURL  + "/subscriptions/" + id);
+		setAuth(httpDelete, credentialProvider);
 		HttpResponse res = httpClient.execute(httpDelete);
+		if (res.getStatusLine().getStatusCode() == 401) {
+			throw new IOException("Failed to authorize request");
+		}
 		StatusLine statusLine = res.getStatusLine();
 		int status = statusLine.getStatusCode();
 		EntityUtils.consume(res.getEntity());
@@ -374,11 +391,14 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 	String addSubscription(Subscription newSubscription) throws IOException {
 		// send tx
 		try {
-			HttpPost httpPost = new HttpPost(this.monitorEndpointURL + "/"
-					+ getSubscriptionUsername() + "/subscriptions");
+			HttpPost httpPost = new HttpPost(this.monitorEndpointURL + "/subscriptions");
+			setAuth(httpPost, credentialProvider);
 			httpPost.setEntity(new StringEntity(newSubscription.toJsonString(),
 					Charset.forName("UTF-8")));
 			HttpResponse res = httpClient.execute(httpPost);
+			if (res.getStatusLine().getStatusCode() == 401) {
+				throw new IOException("Failed to authorize request");
+			}
 			StatusLine statusLine = res.getStatusLine();
 			int status = statusLine.getStatusCode();
 
