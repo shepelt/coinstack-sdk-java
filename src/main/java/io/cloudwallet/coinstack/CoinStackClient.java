@@ -42,6 +42,8 @@ public class CoinStackClient {
 
 	/**
 	 * Creates a CoinStack client instance that connects to mainnet endpoint
+	 * Defaults to using credentials from env variables COINSTACK_ACCESS_KEY_ID
+	 * and COINSTACK_SECRET_ACCESS_KEY
 	 */
 	public CoinStackClient() {
 		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
@@ -488,16 +490,35 @@ public class CoinStackClient {
 		}
 	}
 
+	/**
+	 * Fetch list of subscriptions active
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
 	public Subscription[] listSubscriptions() throws IOException {
 		Endpoint.init();
 		return coinStackAdaptor.listSubscriptions();
 	}
 
+	/**
+	 * Delete subscription with given id
+	 * 
+	 * @param id
+	 * @throws IOException
+	 */
 	public void deleteSubscription(String id) throws IOException {
 		Endpoint.init();
 		coinStackAdaptor.deleteSubscription(id);
 	}
 
+	/**
+	 * Add a subscription with given condition
+	 * 
+	 * @param newSubscription
+	 * @return
+	 * @throws IOException
+	 */
 	public String addSubscription(Subscription newSubscription)
 			throws IOException {
 		Endpoint.init();

@@ -8,9 +8,23 @@ public class AmazonSNSSubscription extends Subscription {
 	private String region;
 	private String topic;
 
-	public AmazonSNSSubscription(String id, String address, String region,
+	protected AmazonSNSSubscription(String id, String address, String region,
 			String topic) {
 		super(id, address);
+		this.region = region;
+		this.topic = topic;
+	}
+	
+	/**
+	 * Creates a subscription that posts a message to Amazon SNS when triggered 
+	 * 
+	 * @param address Blockchain address
+	 * @param region AWS region
+	 * @param topic ARN for SNS topic
+	 */
+	public AmazonSNSSubscription(String address, String region,
+			String topic) {
+		super(address);
 		this.region = region;
 		this.topic = topic;
 	}
@@ -24,7 +38,7 @@ public class AmazonSNSSubscription extends Subscription {
 	}
 
 	@Override
-	public String toJsonString() throws JSONException {
+	protected String toJsonString() throws JSONException {
 		JSONObject json = new JSONObject();
 		json.put("type", 2);
 		json.put("address", this.getAddress());

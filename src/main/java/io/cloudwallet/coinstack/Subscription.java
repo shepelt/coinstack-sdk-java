@@ -24,5 +24,5 @@ public abstract class Subscription {
 		return id;
 	}
 
-	abstract public String toJsonString() throws JSONException;
+	abstract protected String toJsonString() throws JSONException;
 }
