@@ -55,8 +55,6 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 	private Endpoint endpoint;
 	private String[] protocols;
 	private String[] cipherSuites;
-	private String accessKey = "";
-	private String secretKey = "";
 	private CredentialsProvider credentialProvider;
 
 	public CloudWalletBackEndAdaptor(CredentialsProvider provider,
