@@ -7,6 +7,8 @@ public abstract class AbstractCoinStackAdaptor {
 	abstract void init();
 
 	abstract void fini();
+	
+	abstract boolean isMainnet();
 
 	abstract int getBestHeight() throws IOException;
 

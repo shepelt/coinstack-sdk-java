@@ -46,6 +46,48 @@ public enum Endpoint {
 		protected String broadcastEndpoint() {
 			return "";
 		}
+	},
+	COINSTACK_CORE_MAINNET() {
+		@Override
+		protected String endpoint() {
+			return "https://mainnet.cloudwallet.io";
+		}
+
+		@Override
+		protected String monitorEndpoint() {
+			return "https://mainnetmonitor.cloudwallet.io";
+		}
+
+		@Override
+		protected boolean mainnet() {
+			return true;
+		}
+
+		@Override
+		protected String broadcastEndpoint() {
+			return "http://search.cloudwallet.io:9090/sendtx";
+		}
+	},
+	COINSTACK_CORE_TESTNET() {
+		@Override
+		protected String endpoint() {
+			return "https://mainnet.cloudwallet.io";
+		}
+
+		@Override
+		protected String monitorEndpoint() {
+			return "https://mainnetmonitor.cloudwallet.io";
+		}
+
+		@Override
+		protected boolean mainnet() {
+			return true;
+		}
+
+		@Override
+		protected String broadcastEndpoint() {
+			return "http://search.cloudwallet.io:9090/sendtx";
+		}
 	};
 	private PublicKey key;
 
@@ -60,7 +102,7 @@ public enum Endpoint {
 	protected abstract String endpoint();
 
 	protected abstract String monitorEndpoint();
-	
+
 	protected abstract String broadcastEndpoint();
 
 	protected abstract boolean mainnet();

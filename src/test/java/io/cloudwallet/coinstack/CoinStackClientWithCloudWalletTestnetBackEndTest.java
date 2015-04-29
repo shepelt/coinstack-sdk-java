@@ -12,7 +12,7 @@ public class CoinStackClientWithCloudWalletTestnetBackEndTest extends
 		coinStackClient = new CoinStackClient(
 				new CloudWalletBackEndAdaptor(
 						new EnvironmentVariableCredentialsProvider(),
-						Endpoint.TESTNET), false);
+						Endpoint.TESTNET));
 	}
 
 	@Test

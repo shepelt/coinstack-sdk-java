@@ -93,11 +93,10 @@ public class CoinStackClient {
 				: TestNet3Params.get();
 	}
 
-	protected CoinStackClient(AbstractCoinStackAdaptor coinStackAdaptor,
-			boolean isMainNet) {
+	protected CoinStackClient(AbstractCoinStackAdaptor coinStackAdaptor) {
 		this.coinStackAdaptor = coinStackAdaptor;
 		coinStackAdaptor.init();
-		network = isMainNet ? MainNetParams.get() : TestNet3Params.get();
+		network = coinStackAdaptor.isMainnet() ? MainNetParams.get() : TestNet3Params.get();
 	}
 
 	/**

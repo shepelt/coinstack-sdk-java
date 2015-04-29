@@ -30,7 +30,7 @@ public class CoinStackClientWithCloudWalletBackEndTest extends
 						return "f8bd5b50-e98c-11e4-b571-0800200c9a66";
 					}
 
-				}, Endpoint.MAINNET), true);
+				}, Endpoint.MAINNET));
 	}
 
 //	@Test

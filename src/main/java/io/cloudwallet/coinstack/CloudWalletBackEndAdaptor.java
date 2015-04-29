@@ -48,13 +48,26 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	private static final String[] defaultProtocols = new String[] { "TLSv1" };
 	private static final String[] defaultCipherSuites = new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" };
+	private static DateFormat dateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ss.SSS");
+	static {
+		dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+	}
+	private static void setAuth(HttpRequestBase http,
+			CredentialsProvider credentialProvider) {
+		http.setHeader("APIKey", credentialProvider.getAccessKey());
+		http.setHeader("SecretKey", credentialProvider.getSecretKey());
+	}
 	private String endpointURL;
 	private String monitorEndpointURL;
 	private String broadcastEndpointURL;
+
 	private HttpClient httpClient;
 	private Endpoint endpoint;
 	private String[] protocols;
+
 	private String[] cipherSuites;
+
 	private CredentialsProvider credentialProvider;
 
 	public CloudWalletBackEndAdaptor(CredentialsProvider provider,
@@ -82,28 +95,91 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public void init() {
-		// initialize public key verifier
-		PublicKeyVerifier hostnameVerifier = new PublicKeyVerifier(
-				this.endpoint);
-		SSLContext context = SSLContexts.createDefault();
-		SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(
-				context, protocols, cipherSuites, hostnameVerifier);
-		ConnectionSocketFactory plainConnectionSocketFactory = new PlainConnectionSocketFactory();
-		Registry<ConnectionSocketFactory> registry = RegistryBuilder
-				.<ConnectionSocketFactory> create()
-				.register("https", sslConnectionFactory)
-				.register("http", plainConnectionSocketFactory).build();
-		HttpClientConnectionManager connManager = new BasicHttpClientConnectionManager(
-				registry);
-		HttpClientBuilder builder = HttpClientBuilder.create();
-		builder.setConnectionManager(connManager);
-		httpClient = builder.build();
+	String addSubscription(Subscription newSubscription) throws IOException {
+		// send tx
+		try {
+			HttpPost httpPost = new HttpPost(this.monitorEndpointURL + "/subscriptions");
+			setAuth(httpPost, credentialProvider);
+			httpPost.setEntity(new StringEntity(newSubscription.toJsonString(),
+					Charset.forName("UTF-8")));
+			HttpResponse res = httpClient.execute(httpPost);
+			if (res.getStatusLine().getStatusCode() == 401) {
+				throw new IOException("Failed to authorize request");
+			}
+			StatusLine statusLine = res.getStatusLine();
+			int status = statusLine.getStatusCode();
+
+			if (status == 200) {
+				// read result to extract id
+				String resJsonString = EntityUtils.toString(res.getEntity());
+				EntityUtils.consume(res.getEntity());
+				JSONObject resJson;
+				try {
+					resJson = new JSONObject(resJsonString);
+					return resJson.getString("id");
+				} catch (JSONException e) {
+					throw new IOException("Parsing response failed", e);
+				}
+			} else {
+				res.getEntity().getContent().close();
+				throw new IOException("failed to add subscription");
+			}
+		} catch (IOException e) {
+			throw new IOException("Failed to add subscription", e);
+		} catch (JSONException e) {
+			throw new IOException("Failed to marhsall subscription", e);
+		}
+	}
+
+	@Override
+	void deleteSubscription(String id) throws IOException {
+		HttpDelete httpDelete = new HttpDelete(this.monitorEndpointURL  + "/subscriptions/" + id);
+		setAuth(httpDelete, credentialProvider);
+		HttpResponse res = httpClient.execute(httpDelete);
+		if (res.getStatusLine().getStatusCode() == 401) {
+			throw new IOException("Failed to authorize request");
+		}
+		StatusLine statusLine = res.getStatusLine();
+		int status = statusLine.getStatusCode();
+		EntityUtils.consume(res.getEntity());
+		if (status == 200) {
+			return;
+		} else {
+			throw new IOException("failed to delete given subscription");
+		}
 	}
 
 	@Override
 	public void fini() {
 
+	}
+
+	@Override
+	public long getBalance(String address) throws IOException {
+		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/" + address
+				+ "/balance");
+		HttpResponse res = httpClient.execute(httpGet);
+		String resJsonString = EntityUtils.toString(res.getEntity());
+		JSONObject resJson;
+		try {
+			resJson = new JSONObject(resJsonString);
+			return resJson.getLong("balance");
+		} catch (JSONException e) {
+			throw new IOException("Parsing response failed", e);
+		}
+	}
+	@Override
+	public String getBestBlockHash() throws IOException {
+		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/besthash");
+		HttpResponse res = httpClient.execute(httpGet);
+		String resJsonString = EntityUtils.toString(res.getEntity());
+		JSONObject resJson;
+		try {
+			resJson = new JSONObject(resJsonString);
+			return resJson.getString("hash");
+		} catch (JSONException e) {
+			throw new IOException("Parsing response failed", e);
+		}
 	}
 
 	@Override
@@ -115,20 +191,6 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		try {
 			resJson = new JSONObject(resJsonString);
 			return resJson.getInt("height");
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
-		}
-	}
-
-	@Override
-	public String getBestBlockHash() throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/besthash");
-		HttpResponse res = httpClient.execute(httpGet);
-		String resJsonString = EntityUtils.toString(res.getEntity());
-		JSONObject resJson;
-		try {
-			resJson = new JSONObject(resJsonString);
-			return resJson.getString("hash");
 		} catch (JSONException e) {
 			throw new IOException("Parsing response failed", e);
 		}
@@ -164,12 +226,6 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		} catch (ParseException e) {
 			throw new IOException("Parsing response failed", e);
 		}
-	}
-
-	private static DateFormat dateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss.SSS");
-	static {
-		dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 	}
 
 	@Override
@@ -251,20 +307,6 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		return transactions.toArray(new String[0]);
 	}
 
-	@Override
-	public long getBalance(String address) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpointURL + "/api/" + address
-				+ "/balance");
-		HttpResponse res = httpClient.execute(httpGet);
-		String resJsonString = EntityUtils.toString(res.getEntity());
-		JSONObject resJson;
-		try {
-			resJson = new JSONObject(resJsonString);
-			return resJson.getLong("balance");
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
-		}
-	}
 
 	@Override
 	public Output[] getUnspentOutputs(String address) throws IOException {
@@ -289,44 +331,27 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 		}
 		return outputs.toArray(new Output[0]);
 	}
-
-	@Override
-	public void sendTransaction(String rawTransaction) throws IOException,
-			TransactionRejectedException {
-		// send tx
-		try {
-			HttpPost httpPost = new HttpPost(broadcastEndpointURL);
-			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
-			nameValuePairs.add(new BasicNameValuePair("tx", rawTransaction));
-			httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-			HttpResponse res = httpClient.execute(httpPost);
-			StatusLine statusLine = res.getStatusLine();
-			int status = statusLine.getStatusCode();
-
-			if (status == 409) {
-				throw new TransactionRejectedException(
-						"Transaction already present in blockchain");
-			} else if (status == 200) {
-				// sending tx successful
-				return;
-			} else {
-				String errorMessage = EntityUtils.toString(res.getEntity());
-				EntityUtils.consume(res.getEntity());
-				throw new TransactionRejectedException(
-						"Transaction not accepted", new Throwable(errorMessage));
-			}
-		} catch (IOException e) {
-			throw new IOException("Broadcasting transaction failed", e);
-		}
-	}
-
-
-	private static void setAuth(HttpRequestBase http,
-			CredentialsProvider credentialProvider) {
-		http.setHeader("APIKey", credentialProvider.getAccessKey());
-		http.setHeader("SecretKey", credentialProvider.getSecretKey());
-	}
 	
+	@Override
+	public void init() {
+		// initialize public key verifier
+		PublicKeyVerifier hostnameVerifier = new PublicKeyVerifier(
+				this.endpoint);
+		SSLContext context = SSLContexts.createDefault();
+		SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(
+				context, protocols, cipherSuites, hostnameVerifier);
+		ConnectionSocketFactory plainConnectionSocketFactory = new PlainConnectionSocketFactory();
+		Registry<ConnectionSocketFactory> registry = RegistryBuilder
+				.<ConnectionSocketFactory> create()
+				.register("https", sslConnectionFactory)
+				.register("http", plainConnectionSocketFactory).build();
+		HttpClientConnectionManager connManager = new BasicHttpClientConnectionManager(
+				registry);
+		HttpClientBuilder builder = HttpClientBuilder.create();
+		builder.setConnectionManager(connManager);
+		httpClient = builder.build();
+	}
+
 	@Override
 	Subscription[] listSubscriptions() throws IOException {
 		HttpGet httpGet = new HttpGet(this.monitorEndpointURL + "/subscriptions");
@@ -368,57 +393,37 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	void deleteSubscription(String id) throws IOException {
-		HttpDelete httpDelete = new HttpDelete(this.monitorEndpointURL  + "/subscriptions/" + id);
-		setAuth(httpDelete, credentialProvider);
-		HttpResponse res = httpClient.execute(httpDelete);
-		if (res.getStatusLine().getStatusCode() == 401) {
-			throw new IOException("Failed to authorize request");
-		}
-		StatusLine statusLine = res.getStatusLine();
-		int status = statusLine.getStatusCode();
-		EntityUtils.consume(res.getEntity());
-		if (status == 200) {
-			return;
-		} else {
-			throw new IOException("failed to delete given subscription");
+	public void sendTransaction(String rawTransaction) throws IOException,
+			TransactionRejectedException {
+		// send tx
+		try {
+			HttpPost httpPost = new HttpPost(broadcastEndpointURL);
+			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+			nameValuePairs.add(new BasicNameValuePair("tx", rawTransaction));
+			httpPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+			HttpResponse res = httpClient.execute(httpPost);
+			StatusLine statusLine = res.getStatusLine();
+			int status = statusLine.getStatusCode();
+
+			if (status == 409) {
+				throw new TransactionRejectedException(
+						"Transaction already present in blockchain");
+			} else if (status == 200) {
+				// sending tx successful
+				return;
+			} else {
+				String errorMessage = EntityUtils.toString(res.getEntity());
+				EntityUtils.consume(res.getEntity());
+				throw new TransactionRejectedException(
+						"Transaction not accepted", new Throwable(errorMessage));
+			}
+		} catch (IOException e) {
+			throw new IOException("Broadcasting transaction failed", e);
 		}
 	}
 
 	@Override
-	String addSubscription(Subscription newSubscription) throws IOException {
-		// send tx
-		try {
-			HttpPost httpPost = new HttpPost(this.monitorEndpointURL + "/subscriptions");
-			setAuth(httpPost, credentialProvider);
-			httpPost.setEntity(new StringEntity(newSubscription.toJsonString(),
-					Charset.forName("UTF-8")));
-			HttpResponse res = httpClient.execute(httpPost);
-			if (res.getStatusLine().getStatusCode() == 401) {
-				throw new IOException("Failed to authorize request");
-			}
-			StatusLine statusLine = res.getStatusLine();
-			int status = statusLine.getStatusCode();
-
-			if (status == 200) {
-				// read result to extract id
-				String resJsonString = EntityUtils.toString(res.getEntity());
-				EntityUtils.consume(res.getEntity());
-				JSONObject resJson;
-				try {
-					resJson = new JSONObject(resJsonString);
-					return resJson.getString("id");
-				} catch (JSONException e) {
-					throw new IOException("Parsing response failed", e);
-				}
-			} else {
-				res.getEntity().getContent().close();
-				throw new IOException("failed to add subscription");
-			}
-		} catch (IOException e) {
-			throw new IOException("Failed to add subscription", e);
-		} catch (JSONException e) {
-			throw new IOException("Failed to marhsall subscription", e);
-		}
+	boolean isMainnet() {
+		return this.endpoint.mainnet();
 	}
 }

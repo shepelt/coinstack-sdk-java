@@ -172,4 +172,9 @@ public class MockTestnetCoinStackAdaptor extends AbstractCoinStackAdaptor {
 		return null;
 	}
 
+	@Override
+	boolean isMainnet() {
+		return false;
+	}
+
 }
