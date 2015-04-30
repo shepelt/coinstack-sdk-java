@@ -142,7 +142,7 @@ public class CoinStackClientWithTestnetTest {
 		assertEquals(
 				"14a94b66578b5c9c2e904586b2b2dfc079e8ee26dac83e87851b52478b61a1ae",
 				transaction.getInputs()[0].getOutputTransactionId());
-		assertEquals(0, transaction.getInputs()[0].getOutputIndex());
+		assertEquals(1, transaction.getInputs()[0].getOutputIndex());
 		assertNotNull(transaction.getInputs()[0].getOutputAddress());
 		assertEquals("moAHUTQ23CU2aAMD2M8e8MBHYvrWXdNjcM",
 				transaction.getInputs()[0].getOutputAddress());

@@ -62,7 +62,7 @@ public class MockCoinStackAdaptor extends AbstractCoinStackAdaptor {
 								new Date(1425014682000L),
 								false,
 								new Input[] { new Input(
-										0,
+										1,
 										"1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1",
 										"f693cadeacdbb2d980155fbafc82f00c607f2a1fb185cd27b054064b43d00f16",
 										7998950000L) },

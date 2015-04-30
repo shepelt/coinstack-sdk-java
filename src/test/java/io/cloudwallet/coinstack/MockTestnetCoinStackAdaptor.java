@@ -63,7 +63,7 @@ public class MockTestnetCoinStackAdaptor extends AbstractCoinStackAdaptor {
 								false,
 								new Input[] {
 										new Input(
-												0,
+												1,
 												"moAHUTQ23CU2aAMD2M8e8MBHYvrWXdNjcM",
 												"14a94b66578b5c9c2e904586b2b2dfc079e8ee26dac83e87851b52478b61a1ae",
 												1000000L),

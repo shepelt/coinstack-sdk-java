@@ -50,7 +50,7 @@ public enum Endpoint {
 	COINSTACK_CORE_MAINNET() {
 		@Override
 		protected String endpoint() {
-			return "https://mainnet.cloudwallet.io";
+			return "http://52.74.48.201:8090";
 		}
 
 		@Override

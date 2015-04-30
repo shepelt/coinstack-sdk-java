@@ -255,7 +255,7 @@ public class CloudWalletBackEndAdaptor extends AbstractCoinStackAdaptor {
 			inputs = new Input[transactionInputs.length()];
 			for (int i = 0; i < transactionInputs.length(); i++) {
 				inputs[i] = new Input(transactionInputs.getJSONObject(i)
-						.getInt("index"), transactionInputs.getJSONObject(i)
+						.getInt("vout"), transactionInputs.getJSONObject(i)
 						.getString("address"), transactionInputs.getJSONObject(
 						i).getString("hash"), transactionInputs
 						.getJSONObject(i).getLong("value"));

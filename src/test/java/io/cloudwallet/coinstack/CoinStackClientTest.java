@@ -142,7 +142,7 @@ public class CoinStackClientTest {
 		assertEquals(
 				"f693cadeacdbb2d980155fbafc82f00c607f2a1fb185cd27b054064b43d00f16",
 				transaction.getInputs()[0].getOutputTransactionId());
-		assertEquals(0, transaction.getInputs()[0].getOutputIndex());
+		assertEquals(1, transaction.getInputs()[0].getOutputIndex());
 		assertNotNull(transaction.getInputs()[0].getOutputAddress());
 		assertEquals("1Dn86V7bJ7Knv716jj811aXHikyHFD1HQ1",
 				transaction.getInputs()[0].getOutputAddress());
@@ -182,7 +182,7 @@ public class CoinStackClientTest {
 		long balance = coinStackClient
 				.getBalance("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6");
 		// Test 를 위해 그 누구도 권한이 없는 주소로 송금하였습니다. 혹시 잔고가 변경되면 연락해주세요.
-		assertTrue(balance == 4580000000L);
+		assertEquals(4580000000L, balance);
 
 		// testing unspent outputs
 		Output[] outputs = coinStackClient
