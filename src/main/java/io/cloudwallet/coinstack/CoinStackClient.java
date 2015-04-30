@@ -46,8 +46,8 @@ public class CoinStackClient {
 	 * and COINSTACK_SECRET_ACCESS_KEY
 	 */
 	public CoinStackClient() {
-		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(
-				new EnvironmentVariableCredentialsProvider(), Endpoint.MAINNET);
+		this.coinStackAdaptor = new CoreBackEndAdaptor(
+				new EnvironmentVariableCredentialsProvider(), Endpoint.COINSTACK_CORE_MAINNET);
 		coinStackAdaptor.init();
 
 		this.network = MainNetParams.get();
@@ -61,7 +61,7 @@ public class CoinStackClient {
 	 *            EndPoint.TESTNET)
 	 */
 	public CoinStackClient(CredentialsProvider provider, Endpoint endpoint) {
-		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(provider,
+		this.coinStackAdaptor = new CoreBackEndAdaptor(provider,
 				endpoint);
 		coinStackAdaptor.init();
 
@@ -85,7 +85,7 @@ public class CoinStackClient {
 	 */
 	public CoinStackClient(CredentialsProvider provider, Endpoint endpoint,
 			String[] sslProtocols, String[] sslCipherSuites) {
-		this.coinStackAdaptor = new CloudWalletBackEndAdaptor(provider,
+		this.coinStackAdaptor = new CoreBackEndAdaptor(provider,
 				endpoint, sslProtocols, sslCipherSuites);
 		coinStackAdaptor.init();
 
