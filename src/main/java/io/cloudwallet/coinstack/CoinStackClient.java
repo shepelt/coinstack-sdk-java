@@ -47,7 +47,7 @@ public class CoinStackClient {
 	 */
 	public CoinStackClient() {
 		this.coinStackAdaptor = new CoreBackEndAdaptor(
-				new EnvironmentVariableCredentialsProvider(), Endpoint.COINSTACK_CORE_MAINNET);
+				new EnvironmentVariableCredentialsProvider(), Endpoint.MAINNET);
 		coinStackAdaptor.init();
 
 		this.network = MainNetParams.get();

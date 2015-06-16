@@ -46,48 +46,6 @@ public enum Endpoint {
 		protected String broadcastEndpoint() {
 			return "";
 		}
-	},
-	COINSTACK_CORE_MAINNET() {
-		@Override
-		protected String endpoint() {
-			return "http://52.74.48.201:8090";
-		}
-
-		@Override
-		protected String monitorEndpoint() {
-			return "https://mainnetmonitor.cloudwallet.io";
-		}
-
-		@Override
-		protected boolean mainnet() {
-			return true;
-		}
-
-		@Override
-		protected String broadcastEndpoint() {
-			return "http://search.cloudwallet.io:9090/sendtx";
-		}
-	},
-	COINSTACK_CORE_TESTNET() {
-		@Override
-		protected String endpoint() {
-			return "https://mainnet.cloudwallet.io";
-		}
-
-		@Override
-		protected String monitorEndpoint() {
-			return "https://mainnetmonitor.cloudwallet.io";
-		}
-
-		@Override
-		protected boolean mainnet() {
-			return true;
-		}
-
-		@Override
-		protected String broadcastEndpoint() {
-			return "http://search.cloudwallet.io:9090/sendtx";
-		}
 	};
 	private PublicKey key;
 
@@ -116,6 +74,9 @@ public enum Endpoint {
 		initialized = true;
 		InputStream in = CoinStackClient.class.getClassLoader()
 				.getResourceAsStream("keys/public_key.der");
+		if (null == in) {
+			throw new IOException("loading certificate failed - not found");
+		}
 		try {
 			PublicKey key = CertificatePinningManager.getPublicKey(in);
 			MAINNET.setPublicKey(key);

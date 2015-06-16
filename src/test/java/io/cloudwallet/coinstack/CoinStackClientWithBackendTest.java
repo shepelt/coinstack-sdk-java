@@ -12,12 +12,12 @@ import org.junit.Test;
  * @author nepho
  *
  */
-public class CoinStackClientWithCloudWalletBackEndTest extends
+public class CoinStackClientWithBackendTest extends
 		CoinStackClientTest {
 
 	@Override
 	public void setUp() throws Exception {
-		coinStackClient = new CoinStackClient(new CloudWalletBackEndAdaptor(
+		coinStackClient = new CoinStackClient(new CoreBackEndAdaptor(
 				new CredentialsProvider() {
 
 					@Override
@@ -66,7 +66,7 @@ public class CoinStackClientWithCloudWalletBackEndTest extends
 	public void testSSLParameters() throws Exception {
 
 		CoinStackClient client = new CoinStackClient(
-				new CloudWalletBackEndAdaptor(new CredentialsProvider() {
+				new CoreBackEndAdaptor(new CredentialsProvider() {
 
 					@Override
 					String getAccessKey() {

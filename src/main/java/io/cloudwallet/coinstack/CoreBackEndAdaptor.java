@@ -3,15 +3,20 @@ package io.cloudwallet.coinstack;
 import io.cloudwallet.coinstack.HMAC.HMACSigningException;
 
 import java.io.IOException;
-import java.text.ParseException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -20,6 +25,7 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
@@ -56,8 +62,58 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	String addSubscription(Subscription newSubscription) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		try {
+			HttpPost httpPost = new HttpPost(this.endpoint.monitorEndpoint()
+					+ "/subscriptions");
+			byte[] payload = newSubscription.toJsonString().getBytes("UTF8");
+			httpPost.setEntity(new ByteArrayEntity(payload));
+			signPostRequest(httpPost, payload);
+			HttpResponse res = httpClient.execute(httpPost);
+			if (res.getStatusLine().getStatusCode() == 401) {
+				throw new IOException("Failed to authorize request");
+			}
+			StatusLine statusLine = res.getStatusLine();
+			int status = statusLine.getStatusCode();
+
+			if (status == 200) {
+				// read result to extract id
+				String resJsonString = EntityUtils.toString(res.getEntity());
+				EntityUtils.consume(res.getEntity());
+				JSONObject resJson;
+				try {
+					resJson = new JSONObject(resJsonString);
+					return resJson.getString("id");
+				} catch (JSONException e) {
+					throw new IOException("Parsing response failed", e);
+				}
+			} else {
+				res.getEntity().getContent().close();
+				throw new IOException("failed to add subscription");
+			}
+		} catch (IOException e) {
+			throw new IOException("Failed to add subscription", e);
+		} catch (JSONException e) {
+			throw new IOException("Failed to marhsall subscription", e);
+		}
+	}
+
+	@Override
+	void deleteSubscription(String id) throws IOException {
+		HttpDelete httpDelete = new HttpDelete(this.endpoint.monitorEndpoint()
+				+ "/subscriptions/" + id);
+		signRequest(httpDelete);
+		HttpResponse res = httpClient.execute(httpDelete);
+		if (res.getStatusLine().getStatusCode() == 401) {
+			throw new IOException("Failed to authorize request");
+		}
+		StatusLine statusLine = res.getStatusLine();
+		int status = statusLine.getStatusCode();
+		EntityUtils.consume(res.getEntity());
+		if (status == 200) {
+			return;
+		} else {
+			throw new IOException("failed to delete given subscription");
+		}
 	}
 
 	private void checkResponse(HttpResponse res) throws IOException {
@@ -71,12 +127,6 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		default:
 			throw new IOException("Request failed - " + statusCode);
 		}
-	}
-
-	@Override
-	void deleteSubscription(String id) throws IOException {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -162,8 +212,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			}
 			return new Block(DateTime.parse(
 					resJson.getString("confirmation_time")).toDate(),
-					resJson.getString("block_hash"),
-					new String[] { resJson.getString("child") },
+					resJson.getString("block_hash"), new String[] { resJson
+							.getJSONArray("children").getString(0) },
 					resJson.getInt("height"), parentId, txIds);
 		} catch (JSONException e) {
 			throw new IOException("Parsing response failed", e);
@@ -202,7 +252,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			for (int i = 0; i < transactionInputs.length(); i++) {
 				inputs[i] = new Input(transactionInputs.getJSONObject(i)
 						.getInt("output_index"), transactionInputs
-						.getJSONObject(i).getString("address"),
+						.getJSONObject(i).getJSONArray("address").getString(0),
 						transactionInputs.getJSONObject(i).getString(
 								"transaction_hash"), transactionInputs
 								.getJSONObject(i).getLong("value"));
@@ -214,8 +264,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			for (int i = 0; i < transactionOutputs.length(); i++) {
 				JSONObject transactionOutput = transactionOutputs
 						.getJSONObject(i);
-				outputs[i] = new Output(transactionId, i,
-						transactionOutput.getString("address"),
+				outputs[i] = new Output(transactionId, i, transactionOutput
+						.getJSONArray("address").getString(0),
 						transactionOutput.getBoolean("used"),
 						transactionOutput.getLong("value"),
 						transactionOutput.getString("script"));
@@ -307,8 +357,43 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	Subscription[] listSubscriptions() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		HttpGet httpGet = new HttpGet(this.endpoint.monitorEndpoint()
+				+ "/subscriptions");
+		signRequest(httpGet);
+		HttpResponse res = httpClient.execute(httpGet);
+
+		if (res.getStatusLine().getStatusCode() == 401) {
+			throw new IOException("Failed to authorize request");
+		}
+
+		String resJsonString = EntityUtils.toString(res.getEntity());
+		EntityUtils.consume(res.getEntity());
+		JSONArray resJson;
+
+		List<Subscription> subscriptions = new LinkedList<Subscription>();
+		try {
+			resJson = new JSONArray(resJsonString);
+			for (int i = 0; i < resJson.length(); i++) {
+				JSONObject subscription = resJson.getJSONObject(i);
+				if (subscription.getInt("Type") == 1) {
+					// webhook subscription
+					subscriptions.add(new WebHookSubscription(subscription
+							.getString("Id"),
+							subscription.getString("Address"), subscription
+									.getString("Url")));
+				} else if (subscription.getInt("Type") == 2) {
+					// SNS subscription
+					subscriptions.add(new AmazonSNSSubscription(subscription
+							.getString("Id"),
+							subscription.getString("Address"), subscription
+									.getString("Region"), subscription
+									.getString("Topic")));
+				}
+			}
+		} catch (JSONException e) {
+			throw new IOException("Parsing response failed", e);
+		}
+		return subscriptions.toArray(new Subscription[0]);
 	}
 
 	@Override
@@ -318,6 +403,26 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	}
 
+	private void signPostRequest(HttpPost req, byte[] content) throws IOException {
+		try {
+			String md5 = calculateMD5(content);
+			req.addHeader(HMAC.CONTENT_MD5, md5);
+			HMAC.signRequest(req, this.credentialProvider.getAccessKey(),
+					this.credentialProvider.getSecretKey(),
+					HMAC.generateTimestamp());
+		} catch (HMACSigningException e) {
+			throw new IOException("Failed to sign request", e);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IOException("Failed to sign request", e);
+		}
+	}
+	private String calculateMD5(byte[] contentToEncode) throws NoSuchAlgorithmException {
+		MessageDigest digest = MessageDigest.getInstance("MD5");
+		digest.update(contentToEncode);
+		String result = new String(Hex.encodeHex(digest.digest()));
+		return result;
+	}
+	
 	private void signRequest(HttpRequestBase req) throws IOException {
 		try {
 			HMAC.signRequest(req, this.credentialProvider.getAccessKey(),
