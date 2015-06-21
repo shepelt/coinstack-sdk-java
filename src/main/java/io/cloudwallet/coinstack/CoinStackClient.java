@@ -29,6 +29,8 @@ import org.bitcoinj.core.Wallet.DustySendRequested;
 import org.bitcoinj.core.Wallet.SendRequest;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.TestNet3Params;
+import org.bitcoinj.script.ScriptBuilder;
+import org.bitcoinj.script.ScriptOpCodes;
 import org.bitcoinj.wallet.WalletTransaction;
 
 /**
@@ -61,8 +63,7 @@ public class CoinStackClient {
 	 *            EndPoint.TESTNET)
 	 */
 	public CoinStackClient(CredentialsProvider provider, Endpoint endpoint) {
-		this.coinStackAdaptor = new CoreBackEndAdaptor(provider,
-				endpoint);
+		this.coinStackAdaptor = new CoreBackEndAdaptor(provider, endpoint);
 		coinStackAdaptor.init();
 
 		this.network = endpoint.mainnet() ? MainNetParams.get()
@@ -85,8 +86,8 @@ public class CoinStackClient {
 	 */
 	public CoinStackClient(CredentialsProvider provider, Endpoint endpoint,
 			String[] sslProtocols, String[] sslCipherSuites) {
-		this.coinStackAdaptor = new CoreBackEndAdaptor(provider,
-				endpoint, sslProtocols, sslCipherSuites);
+		this.coinStackAdaptor = new CoreBackEndAdaptor(provider, endpoint,
+				sslProtocols, sslCipherSuites);
 		coinStackAdaptor.init();
 
 		this.network = endpoint.mainnet() ? MainNetParams.get()
@@ -96,7 +97,8 @@ public class CoinStackClient {
 	protected CoinStackClient(AbstractCoinStackAdaptor coinStackAdaptor) {
 		this.coinStackAdaptor = coinStackAdaptor;
 		coinStackAdaptor.init();
-		network = coinStackAdaptor.isMainnet() ? MainNetParams.get() : TestNet3Params.get();
+		network = coinStackAdaptor.isMainnet() ? MainNetParams.get()
+				: TestNet3Params.get();
 	}
 
 	/**
@@ -247,6 +249,55 @@ public class CoinStackClient {
 		request.fee = Coin.valueOf(fee);
 		request.feePerKb = Coin.ZERO;
 
+		org.bitcoinj.core.Transaction tx;
+		try {
+			tx = tempWallet.sendCoinsOffline(request);
+		} catch (InsufficientMoneyException e) {
+			throw new InsufficientFundException("Insufficient fund");
+		} catch (DustySendRequested e) {
+			throw new DustyTransactionException(
+					"Send amount below dust threshold");
+		}
+		byte[] rawTx = tx.bitcoinSerialize();
+		// // convert to string encoded hex and return
+		return Utils.HEX.encode(rawTx);
+	}
+
+	public String createDataTransaction(String privateKeyWIF, long fee, byte[] payload)
+			throws IOException, InsufficientFundException,
+			DustyTransactionException {
+		Endpoint.init();
+		// check sanity test for parameters
+		if (payload.length > 80) {
+			throw new MalformedInputException("payload length over 80 bytes");
+		}
+		// derive address from private key
+		final ECKey signingKey;
+		try {
+			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
+		} catch (AddressFormatException e) {
+			throw new MalformedInputException("Parsing private key failed");
+		}
+		Address fromAddress = signingKey.toAddress(network);
+		String from = fromAddress.toString();
+
+		// get unspentout from address
+		Output[] outputs = this.getUnspentOutputs(from);
+
+		Wallet tempWallet = new Wallet(network);
+		tempWallet.allowSpendingUnconfirmedTransactions();
+		tempWallet.importKey(signingKey);
+		injectOutputs(tempWallet, outputs);
+		
+		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(network);
+		txTemplate.addOutput(org.bitcoinj.core.Transaction.MIN_NONDUST_OUTPUT, 
+				new ScriptBuilder().op(ScriptOpCodes.OP_RETURN).data(payload).build());
+		
+		SendRequest request = SendRequest.forTx(txTemplate);
+		request.changeAddress = fromAddress;
+		request.fee = Coin.valueOf(fee);
+		request.feePerKb = Coin.ZERO;
+		
 		org.bitcoinj.core.Transaction tx;
 		try {
 			tx = tempWallet.sendCoinsOffline(request);
