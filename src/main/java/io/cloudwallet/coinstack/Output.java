@@ -1,5 +1,13 @@
 package io.cloudwallet.coinstack;
 
+import java.util.List;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.bitcoinj.script.Script;
+import org.bitcoinj.script.ScriptChunk;
+import org.bitcoinj.script.ScriptOpCodes;
+
 public class Output implements Comparable<Output> {
 	private String transactionId;
 	private int index;
@@ -16,6 +24,25 @@ public class Output implements Comparable<Output> {
 		this.isSpent = isSpent;
 		this.value = value;
 		this.script = script;
+	}
+
+	public byte[] getData() {
+		byte[] scriptBytes = null;
+		try {
+			scriptBytes = Hex.decodeHex(script.toCharArray());
+		} catch (DecoderException e) {
+			return null;
+		}
+		Script script = new Script(scriptBytes);
+		List<ScriptChunk> chunks = script.getChunks();
+		
+		if (chunks.size() < 2) {
+			return null;
+		}
+		if (!chunks.get(0).equalsOpCode(ScriptOpCodes.OP_RETURN)) {
+			return null;
+		}
+		return chunks.get(1).data;
 	}
 
 	public String getAddress() {
