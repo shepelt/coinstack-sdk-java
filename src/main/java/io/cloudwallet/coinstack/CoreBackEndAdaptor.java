@@ -63,7 +63,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	@Override
 	String addSubscription(Subscription newSubscription) throws IOException {
 		try {
-			HttpPost httpPost = new HttpPost(this.endpoint.monitorEndpoint()
+			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
 					+ "/subscriptions");
 			byte[] payload = newSubscription.toJsonString().getBytes("UTF8");
 			httpPost.setEntity(new ByteArrayEntity(payload));
@@ -99,7 +99,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	void deleteSubscription(String id) throws IOException {
-		HttpDelete httpDelete = new HttpDelete(this.endpoint.monitorEndpoint()
+		HttpDelete httpDelete = new HttpDelete(this.endpoint.endpoint()
 				+ "/subscriptions/" + id);
 		signRequest(httpDelete);
 		HttpResponse res = httpClient.execute(httpDelete);
@@ -357,7 +357,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	Subscription[] listSubscriptions() throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint.monitorEndpoint()
+		HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
 				+ "/subscriptions");
 		signRequest(httpGet);
 		HttpResponse res = httpClient.execute(httpGet);
@@ -367,6 +367,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		}
 
 		String resJsonString = EntityUtils.toString(res.getEntity());
+		System.out.println(resJsonString);
 		EntityUtils.consume(res.getEntity());
 		JSONArray resJson;
 
@@ -375,20 +376,11 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			resJson = new JSONArray(resJsonString);
 			for (int i = 0; i < resJson.length(); i++) {
 				JSONObject subscription = resJson.getJSONObject(i);
-				if (subscription.getInt("Type") == 1) {
-					// webhook subscription
-					subscriptions.add(new WebHookSubscription(subscription
-							.getString("Id"),
-							subscription.getString("Address"), subscription
-									.getString("Url")));
-				} else if (subscription.getInt("Type") == 2) {
-					// SNS subscription
-					subscriptions.add(new AmazonSNSSubscription(subscription
-							.getString("Id"),
-							subscription.getString("Address"), subscription
-									.getString("Region"), subscription
-									.getString("Topic")));
-				}
+					subscriptions.add(new Subscription(subscription
+							.getString("id"),
+							subscription.getString("address"), subscription
+									.getString("action")));
+				
 			}
 		} catch (JSONException e) {
 			throw new IOException("Parsing response failed", e);

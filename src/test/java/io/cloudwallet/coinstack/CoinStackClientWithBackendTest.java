@@ -21,12 +21,12 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 
 					@Override
 					String getAccessKey() {
-						return "eb90dbf0-e98c-11e4-b571-0800200c9a66";
+						return "70a7758ddeafd9154ae13473963acd";
 					}
 
 					@Override
 					String getSecretKey() {
-						return "f8bd5b50-e98c-11e4-b571-0800200c9a66";
+						return "6b88dcf7a6b4e09adc8f1095e594f9";
 					}
 
 				}, Endpoint.MAINNET));
@@ -122,9 +122,9 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		}
 		System.out.println("registering a new subscription");
 
-		Subscription newSubscription = new WebHookSubscription(
+		Subscription newSubscription = new Subscription(
 				"1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168",
-				"http://requestb.in/o87t0qo8");
+				"1d4bce0584");
 		String subscriptionId = coinStackClient
 				.addSubscription(newSubscription);
 		assertNotNull(subscriptionId);

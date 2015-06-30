@@ -1,19 +1,27 @@
 package io.cloudwallet.coinstack;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
-public abstract class Subscription {
+public class Subscription {
 
 	private String address;
 	private String id;
+	private String actionId;
 
-	public Subscription(String address) {
+	public Subscription(String address, String actionId) {
 		this.address = address;
+		this.actionId = actionId;
 	}
 	
-	public Subscription(String id, String address) {
+	public Subscription(String id, String address, String actionId) {
 		this.id = id;
 		this.address = address;
+		this.actionId = actionId;
+	}
+
+	public String getActionId() {
+		return actionId;
 	}
 
 	public String getAddress() {
@@ -24,5 +32,10 @@ public abstract class Subscription {
 		return id;
 	}
 
-	abstract protected String toJsonString() throws JSONException;
+	protected String toJsonString() throws JSONException {
+		JSONObject json = new JSONObject();
+		json.put("action", this.getActionId());
+		json.put("address", this.getAddress());
+		return json.toString();
+	}
 }
