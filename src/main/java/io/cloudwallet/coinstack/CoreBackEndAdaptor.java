@@ -14,21 +14,21 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.joda.time.DateTime;
 import org.json.JSONArray;
@@ -38,7 +38,7 @@ import org.json.JSONObject;
 public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	private static final String[] defaultProtocols = new String[] { "TLSv1" };
 	private static final String[] defaultCipherSuites = new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" };
-	private HttpClient httpClient;
+	private CloseableHttpClient httpClient;
 	private Endpoint endpoint;
 	private String[] protocols;
 
@@ -63,13 +63,14 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	String addSubscription(Subscription newSubscription) throws IOException {
+		CloseableHttpResponse res = null;
 		try {
 			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
 					+ "/subscriptions");
 			byte[] payload = newSubscription.toJsonString().getBytes("UTF8");
 			httpPost.setEntity(new ByteArrayEntity(payload));
 			signPostRequest(httpPost, payload);
-			HttpResponse res = httpClient.execute(httpPost);
+			res = httpClient.execute(httpPost);
 			if (res.getStatusLine().getStatusCode() == 401) {
 				throw new IOException("Failed to authorize request");
 			}
@@ -95,6 +96,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			throw new IOException("Failed to add subscription", e);
 		} catch (JSONException e) {
 			throw new IOException("Failed to marhsall subscription", e);
+		} finally {
+			res.close();
 		}
 	}
 
@@ -103,13 +106,14 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		HttpDelete httpDelete = new HttpDelete(this.endpoint.endpoint()
 				+ "/subscriptions/" + id);
 		signRequest(httpDelete);
-		HttpResponse res = httpClient.execute(httpDelete);
+		CloseableHttpResponse res = httpClient.execute(httpDelete);
 		if (res.getStatusLine().getStatusCode() == 401) {
 			throw new IOException("Failed to authorize request");
 		}
 		StatusLine statusLine = res.getStatusLine();
 		int status = statusLine.getStatusCode();
 		EntityUtils.consume(res.getEntity());
+		res.close();
 		if (status == 200) {
 			return;
 		} else {
@@ -140,10 +144,11 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/"
 				+ address + "/balance");
 		signRequest(httpGet);
-		HttpResponse res = httpClient.execute(httpGet);
+		CloseableHttpResponse res = httpClient.execute(httpGet);
 		checkResponse(res);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
+		res.close();
 		try {
 			resJson = new JSONObject(resJsonString);
 			return resJson.getLong("balance");
@@ -156,11 +161,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	String getBestBlockHash() throws IOException {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
 		signRequest(httpGet);
-		HttpResponse res = httpClient.execute(httpGet);
+		CloseableHttpResponse res = httpClient.execute(httpGet);
 		checkResponse(res);
 
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
+		res.close();
 		try {
 			resJson = new JSONObject(resJsonString);
 			return resJson.getString("best_block_hash");
@@ -173,11 +179,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	int getBestHeight() throws IOException {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
 		signRequest(httpGet);
-		HttpResponse res = httpClient.execute(httpGet);
+		CloseableHttpResponse res = httpClient.execute(httpGet);
 		checkResponse(res);
 
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONObject resJson;
+		res.close();
 		try {
 			resJson = new JSONObject(resJsonString);
 			return resJson.getInt("best_height");
@@ -191,12 +198,13 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blocks/"
 				+ blockId);
 		signRequest(httpGet);
-		HttpResponse res = httpClient.execute(httpGet);
+		CloseableHttpResponse res = httpClient.execute(httpGet);
 		checkResponse(res);
 
 		String resJsonString = EntityUtils.toString(res.getEntity());
 
 		JSONObject resJson;
+		res.close();
 		try {
 			resJson = new JSONObject(resJsonString);
 			String[] txIds;
@@ -227,13 +235,13 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
 				+ "/transactions/" + transactionId);
 		signRequest(httpGet);
-		HttpResponse res = httpClient.execute(httpGet);
+		CloseableHttpResponse res = httpClient.execute(httpGet);
 		checkResponse(res);
 
 		String resJsonString = EntityUtils.toString(res.getEntity());
 
 		JSONObject resJson;
-
+		res.close();
 		try {
 			String[] blockIds;
 			Input[] inputs;
@@ -287,12 +295,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/"
 				+ address + "/history");
 		signRequest(httpGet);
-		HttpResponse res = httpClient.execute(httpGet);
+		CloseableHttpResponse res = httpClient.execute(httpGet);
 		checkResponse(res);
 
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		JSONArray resJson;
-
+		res.close();
 		List<String> transactions = new LinkedList<String>();
 		try {
 			resJson = new JSONArray(resJsonString);
@@ -310,12 +318,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/"
 				+ address + "/unspentoutputs");
 		signRequest(httpGet);
-		HttpResponse res = httpClient.execute(httpGet);
+		CloseableHttpResponse res = httpClient.execute(httpGet);
 		checkResponse(res);
 		String resJsonString = EntityUtils.toString(res.getEntity());
 		EntityUtils.consume(res.getEntity());
 		JSONArray resJson;
-
+		res.close();
 		List<Output> outputs = new LinkedList<Output>();
 		try {
 			resJson = new JSONArray(resJsonString);
@@ -344,8 +352,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				.<ConnectionSocketFactory> create()
 				.register("https", sslConnectionFactory)
 				.register("http", plainConnectionSocketFactory).build();
-		HttpClientConnectionManager connManager = new BasicHttpClientConnectionManager(
-				registry);
+		PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(registry);
 		HttpClientBuilder builder = HttpClientBuilder.create();
 		builder.setConnectionManager(connManager);
 		httpClient = builder.build();
