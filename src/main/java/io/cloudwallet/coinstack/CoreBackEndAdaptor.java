@@ -12,6 +12,7 @@ import javax.net.ssl.SSLContext;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
@@ -376,11 +377,11 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			resJson = new JSONArray(resJsonString);
 			for (int i = 0; i < resJson.length(); i++) {
 				JSONObject subscription = resJson.getJSONObject(i);
-					subscriptions.add(new Subscription(subscription
-							.getString("id"),
-							subscription.getString("address"), subscription
-									.getString("action")));
-				
+				subscriptions.add(new Subscription(
+						subscription.getString("id"), subscription
+								.getString("address"), subscription
+								.getString("action")));
+
 			}
 		} catch (JSONException e) {
 			throw new IOException("Parsing response failed", e);
@@ -391,11 +392,33 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	@Override
 	void sendTransaction(String rawTransaction) throws IOException,
 			TransactionRejectedException {
-		// TODO Auto-generated method stub
+		try {
+			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
+					+ "/transactions");
+			JSONObject txRequest = new JSONObject();
+			txRequest.put("tx", rawTransaction);
+			byte[] payload = txRequest.toString().getBytes("UTF8");
+			httpPost.setEntity(new ByteArrayEntity(payload));
+			signPostRequest(httpPost, payload);
+			HttpResponse res = httpClient.execute(httpPost);
+			if (res.getStatusLine().getStatusCode() == 401) {
+				throw new IOException("Failed to authorize request");
+			}
+			StatusLine statusLine = res.getStatusLine();
+			int status = statusLine.getStatusCode();
 
+			if (status == 409) {
+				throw new IOException("conflicting transaction", new IOException(statusLine.toString()));
+			} else {
+				throw new IOException("failed to send transaction", new IOException(statusLine.toString()));
+			}
+		} catch (JSONException e) {
+			throw new IOException("Failed to construct request", e);
+		}
 	}
 
-	private void signPostRequest(HttpPost req, byte[] content) throws IOException {
+	private void signPostRequest(HttpPost req, byte[] content)
+			throws IOException {
 		try {
 			String md5 = calculateMD5(content);
 			req.addHeader(HMAC.CONTENT_MD5, md5);
@@ -408,13 +431,15 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			throw new IOException("Failed to sign request", e);
 		}
 	}
-	private String calculateMD5(byte[] contentToEncode) throws NoSuchAlgorithmException {
+
+	private String calculateMD5(byte[] contentToEncode)
+			throws NoSuchAlgorithmException {
 		MessageDigest digest = MessageDigest.getInstance("MD5");
 		digest.update(contentToEncode);
 		String result = new String(Hex.encodeHex(digest.digest()));
 		return result;
 	}
-	
+
 	private void signRequest(HttpRequestBase req) throws IOException {
 		try {
 			HMAC.signRequest(req, this.credentialProvider.getAccessKey(),
