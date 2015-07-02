@@ -29,6 +29,7 @@ import org.bitcoinj.core.Wallet.DustySendRequested;
 import org.bitcoinj.core.Wallet.SendRequest;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.TestNet3Params;
+import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptOpCodes;
 import org.bitcoinj.wallet.WalletTransaction;
@@ -263,8 +264,29 @@ public class CoinStackClient {
 		return Utils.HEX.encode(rawTx);
 	}
 
-	public String createDataTransaction(String privateKeyWIF, long fee, byte[] payload)
-			throws IOException, InsufficientFundException,
+	/**
+	 * Construct a transaction for storing raw data and sign it using private
+	 * key
+	 * 
+	 * @param privateKeyWIF
+	 *            private key in Wallet Import Format to sign transactino with
+	 * @param payload
+	 *            80 byte data to embeded in transaction
+	 * @param fee
+	 *            amount of fee to pay to miners (minimum 0.0001 BTC = 10000
+	 *            satoshi)
+	 * @return transaction signed and ready to be broadcasted in hex-encoded
+	 *         string
+	 * @throws IOException
+	 *             in case of network failure
+	 * @throws InsufficientFundException
+	 *             in case there is not sufficient fund in private key provided
+	 * @throws DustyTransactionException
+	 *             in case the amount to transfer is too small to be handled by
+	 *             blockchain
+	 */
+	public String createDataTransaction(String privateKeyWIF, long fee,
+			byte[] payload) throws IOException, InsufficientFundException,
 			DustyTransactionException {
 		Endpoint.init();
 		// check sanity test for parameters
@@ -288,16 +310,20 @@ public class CoinStackClient {
 		tempWallet.allowSpendingUnconfirmedTransactions();
 		tempWallet.importKey(signingKey);
 		injectOutputs(tempWallet, outputs);
-		
-		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(network);
-		txTemplate.addOutput(org.bitcoinj.core.Transaction.MIN_NONDUST_OUTPUT, 
-				new ScriptBuilder().op(ScriptOpCodes.OP_RETURN).data(payload).build());
-		
+
+		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(
+				network);
+		Script script = new ScriptBuilder().op(ScriptOpCodes.OP_RETURN)
+				.data(payload).build();
+		TransactionOutput output = new DataTransactionOutput(this.network,
+				txTemplate, Coin.ZERO, script.getProgram());
+		txTemplate.addOutput(output);
+
 		SendRequest request = SendRequest.forTx(txTemplate);
 		request.changeAddress = fromAddress;
 		request.fee = Coin.valueOf(fee);
 		request.feePerKb = Coin.ZERO;
-		
+
 		org.bitcoinj.core.Transaction tx;
 		try {
 			tx = tempWallet.sendCoinsOffline(request);

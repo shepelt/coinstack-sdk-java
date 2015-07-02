@@ -415,7 +415,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 			if (status == 409) {
 				throw new IOException("conflicting transaction", new IOException(statusLine.toString()));
-			} else {
+			} else if (status != 200) {
 				throw new IOException("failed to send transaction", new IOException(statusLine.toString()));
 			}
 		} catch (JSONException e) {
