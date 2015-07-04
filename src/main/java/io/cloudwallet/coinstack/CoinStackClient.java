@@ -225,6 +225,7 @@ public class CoinStackClient {
 	 *             in case the amount to transfer is too small to be handled by
 	 *             blockchain
 	 */
+	@Deprecated
 	public String createRawTransaction(String privateKeyWIF,
 			String destinationAddress, long amount, long fee)
 			throws IOException, InsufficientFundException,
@@ -280,7 +281,7 @@ public class CoinStackClient {
 	 * key
 	 * 
 	 * @param privateKeyWIF
-	 *            private key in Wallet Import Format to sign transactino with
+	 *            private key in Wallet Import Format to sign transaction with
 	 * @param payload
 	 *            80 byte data to embeded in transaction
 	 * @param fee
@@ -296,6 +297,7 @@ public class CoinStackClient {
 	 *             in case the amount to transfer is too small to be handled by
 	 *             blockchain
 	 */
+	@Deprecated
 	public String createDataTransaction(String privateKeyWIF, long fee,
 			byte[] payload) throws IOException, InsufficientFundException,
 			DustyTransactionException {
@@ -349,6 +351,23 @@ public class CoinStackClient {
 		return Utils.HEX.encode(rawTx);
 	}
 
+	/**
+	 * Construct a transaction and sign it using private key
+	 * 
+	 * @param builder
+	 *            Transaction builder to create transaction with
+	 * @param privateKeyWIF
+	 *            private key in Wallet Import Format to sign transaction with
+	 * @return transaction signed and ready to be broadcasted in hex-encoded
+	 *         string
+	 * @throws IOException
+	 *             in case of network failure
+	 * @throws InsufficientFundException
+	 *             in case there is not sufficient fund in private key provided
+	 * @throws DustyTransactionException
+	 *             in case the amount to transfer is too small to be handled by
+	 *             blockchain
+	 */
 	public String createSignedTransaction(TransactionBuilder builder,
 			String privateKeyWIF) throws IOException,
 			InsufficientFundException, DustyTransactionException {
@@ -368,7 +387,7 @@ public class CoinStackClient {
 			txTemplate.addOutput(Coin.valueOf(output.getValue()),
 					destinationAddressParsed);
 		}
-		
+
 		// add OP_RETURN
 		if (null != builder.getData()) {
 			Script script = new ScriptBuilder().op(ScriptOpCodes.OP_RETURN)
