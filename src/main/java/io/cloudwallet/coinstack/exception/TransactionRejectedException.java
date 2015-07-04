@@ -1,4 +1,4 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.exception;
 
 public class TransactionRejectedException extends Exception {
 	private static final long serialVersionUID = -1236150541157342218L;

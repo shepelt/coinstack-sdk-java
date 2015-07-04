@@ -1,4 +1,4 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.exception;
 
 public class DustyTransactionException extends Exception {
 	private static final long serialVersionUID = -337783809277051530L;

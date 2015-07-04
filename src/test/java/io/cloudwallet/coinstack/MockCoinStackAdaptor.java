@@ -4,6 +4,11 @@
 package io.cloudwallet.coinstack;
 
 import io.cloudwallet.coinstack.backendadaptor.AbstractCoinStackAdaptor;
+import io.cloudwallet.coinstack.model.Block;
+import io.cloudwallet.coinstack.model.Input;
+import io.cloudwallet.coinstack.model.Output;
+import io.cloudwallet.coinstack.model.Subscription;
+import io.cloudwallet.coinstack.model.Transaction;
 
 import java.io.IOException;
 import java.util.ArrayList;

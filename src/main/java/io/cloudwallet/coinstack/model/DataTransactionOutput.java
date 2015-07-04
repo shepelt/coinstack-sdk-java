@@ -1,4 +1,4 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.model;
 
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.NetworkParameters;

@@ -1,4 +1,4 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.exception;
 
 public class InsufficientFundException extends IllegalArgumentException {
 	public InsufficientFundException(String message) {

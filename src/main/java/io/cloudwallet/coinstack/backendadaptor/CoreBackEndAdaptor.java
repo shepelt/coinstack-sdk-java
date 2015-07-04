@@ -1,16 +1,16 @@
 package io.cloudwallet.coinstack.backendadaptor;
 
-import io.cloudwallet.coinstack.Block;
-import io.cloudwallet.coinstack.CredentialsProvider;
 import io.cloudwallet.coinstack.Endpoint;
-import io.cloudwallet.coinstack.HMAC;
-import io.cloudwallet.coinstack.Input;
-import io.cloudwallet.coinstack.Output;
-import io.cloudwallet.coinstack.PublicKeyVerifier;
-import io.cloudwallet.coinstack.Subscription;
-import io.cloudwallet.coinstack.Transaction;
-import io.cloudwallet.coinstack.TransactionRejectedException;
-import io.cloudwallet.coinstack.HMAC.HMACSigningException;
+import io.cloudwallet.coinstack.exception.TransactionRejectedException;
+import io.cloudwallet.coinstack.model.Block;
+import io.cloudwallet.coinstack.model.CredentialsProvider;
+import io.cloudwallet.coinstack.model.Input;
+import io.cloudwallet.coinstack.model.Output;
+import io.cloudwallet.coinstack.model.Subscription;
+import io.cloudwallet.coinstack.model.Transaction;
+import io.cloudwallet.coinstack.util.HMAC;
+import io.cloudwallet.coinstack.util.PublicKeyVerifier;
+import io.cloudwallet.coinstack.util.HMAC.HMACSigningException;
 
 import java.io.IOException;
 import java.security.MessageDigest;

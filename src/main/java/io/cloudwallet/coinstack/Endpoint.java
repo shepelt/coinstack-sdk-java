@@ -1,5 +1,7 @@
 package io.cloudwallet.coinstack;
 
+import io.cloudwallet.coinstack.util.CertificatePinningManager;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.PublicKey;
@@ -30,7 +32,7 @@ public enum Endpoint {
 	};
 	private PublicKey key;
 
-	protected PublicKey getPublicKey() {
+	public PublicKey getPublicKey() {
 		return this.key;
 	}
 

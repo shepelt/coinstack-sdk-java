@@ -1,6 +1,7 @@
 package io.cloudwallet.coinstack;
 
 import static org.junit.Assert.assertEquals;
+import io.cloudwallet.coinstack.util.HMAC;
 
 import org.apache.http.client.methods.HttpGet;
 import org.junit.Test;

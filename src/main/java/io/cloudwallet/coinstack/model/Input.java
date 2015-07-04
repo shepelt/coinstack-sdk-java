@@ -1,4 +1,4 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.model;
 
 public class Input {
 

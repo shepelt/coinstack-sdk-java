@@ -7,6 +7,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import io.cloudwallet.coinstack.model.Block;
+import io.cloudwallet.coinstack.model.BlockchainStatus;
+import io.cloudwallet.coinstack.model.Output;
+import io.cloudwallet.coinstack.model.Transaction;
 
 import java.util.HashMap;
 import java.util.Map;

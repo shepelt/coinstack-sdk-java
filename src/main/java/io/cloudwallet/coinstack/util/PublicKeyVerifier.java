@@ -1,4 +1,6 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.util;
+
+import io.cloudwallet.coinstack.Endpoint;
 
 import java.io.IOException;
 import java.security.cert.Certificate;

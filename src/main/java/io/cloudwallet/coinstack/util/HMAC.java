@@ -1,4 +1,4 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.util;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;

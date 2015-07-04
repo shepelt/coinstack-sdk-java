@@ -1,4 +1,4 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.exception;
 
 public class MalformedInputException extends IllegalArgumentException {
 	public MalformedInputException(String message) {

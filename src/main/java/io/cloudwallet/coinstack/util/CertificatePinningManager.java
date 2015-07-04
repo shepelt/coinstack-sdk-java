@@ -1,4 +1,4 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.util;
 
 import java.io.InputStream;
 import java.security.KeyFactory;

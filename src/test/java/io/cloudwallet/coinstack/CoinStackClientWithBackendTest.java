@@ -5,6 +5,9 @@ package io.cloudwallet.coinstack;
 
 import static org.junit.Assert.*;
 import io.cloudwallet.coinstack.backendadaptor.CoreBackEndAdaptor;
+import io.cloudwallet.coinstack.model.CredentialsProvider;
+import io.cloudwallet.coinstack.model.Subscription;
+import io.cloudwallet.coinstack.model.Transaction;
 
 import org.junit.Assert;
 import org.junit.Test;

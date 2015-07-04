@@ -1,10 +1,10 @@
 package io.cloudwallet.coinstack.backendadaptor;
 
-import io.cloudwallet.coinstack.Block;
-import io.cloudwallet.coinstack.Output;
-import io.cloudwallet.coinstack.Subscription;
-import io.cloudwallet.coinstack.Transaction;
-import io.cloudwallet.coinstack.TransactionRejectedException;
+import io.cloudwallet.coinstack.exception.TransactionRejectedException;
+import io.cloudwallet.coinstack.model.Block;
+import io.cloudwallet.coinstack.model.Output;
+import io.cloudwallet.coinstack.model.Subscription;
+import io.cloudwallet.coinstack.model.Transaction;
 
 import java.io.IOException;
 

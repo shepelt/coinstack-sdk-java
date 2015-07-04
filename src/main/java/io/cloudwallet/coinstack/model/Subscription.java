@@ -1,4 +1,4 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.model;
 
 import org.json.JSONException;
 import org.json.JSONObject;
