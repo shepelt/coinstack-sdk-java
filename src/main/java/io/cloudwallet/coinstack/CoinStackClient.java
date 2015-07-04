@@ -3,6 +3,9 @@
  */
 package io.cloudwallet.coinstack;
 
+import io.cloudwallet.coinstack.backendadaptor.AbstractCoinStackAdaptor;
+import io.cloudwallet.coinstack.backendadaptor.CoreBackEndAdaptor;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyFactory;

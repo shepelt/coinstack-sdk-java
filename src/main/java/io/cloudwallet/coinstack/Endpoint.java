@@ -7,24 +7,24 @@ import java.security.PublicKey;
 public enum Endpoint {
 	MAINNET() {
 		@Override
-		protected String endpoint() {
+		public String endpoint() {
 			return "https://mainnet.cloudwallet.io";
 		}
 
 		@Override
-		protected boolean mainnet() {
+		public boolean mainnet() {
 			return true;
 		}
 
 	},
 	TESTNET() {
 		@Override
-		protected String endpoint() {
+		public String endpoint() {
 			return "https://testnet.cloudwallet.io";
 		}
 
 		@Override
-		protected boolean mainnet() {
+		public boolean mainnet() {
 			return false;
 		}
 	};
@@ -38,9 +38,9 @@ public enum Endpoint {
 		this.key = key;
 	}
 
-	protected abstract String endpoint();
+	public abstract String endpoint();
 
-	protected abstract boolean mainnet();
+	public abstract boolean mainnet();
 
 	private static boolean initialized = false;
 

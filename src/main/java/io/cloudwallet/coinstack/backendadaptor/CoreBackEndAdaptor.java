@@ -1,5 +1,15 @@
-package io.cloudwallet.coinstack;
+package io.cloudwallet.coinstack.backendadaptor;
 
+import io.cloudwallet.coinstack.Block;
+import io.cloudwallet.coinstack.CredentialsProvider;
+import io.cloudwallet.coinstack.Endpoint;
+import io.cloudwallet.coinstack.HMAC;
+import io.cloudwallet.coinstack.Input;
+import io.cloudwallet.coinstack.Output;
+import io.cloudwallet.coinstack.PublicKeyVerifier;
+import io.cloudwallet.coinstack.Subscription;
+import io.cloudwallet.coinstack.Transaction;
+import io.cloudwallet.coinstack.TransactionRejectedException;
 import io.cloudwallet.coinstack.HMAC.HMACSigningException;
 
 import java.io.IOException;
@@ -61,7 +71,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	String addSubscription(Subscription newSubscription) throws IOException {
+	public String addSubscription(Subscription newSubscription)
+			throws IOException {
 		CloseableHttpResponse res = null;
 		try {
 			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
@@ -101,7 +112,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	void deleteSubscription(String id) throws IOException {
+	public void deleteSubscription(String id) throws IOException {
 		HttpDelete httpDelete = new HttpDelete(this.endpoint.endpoint()
 				+ "/subscriptions/" + id);
 		signRequest(httpDelete);
@@ -134,12 +145,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	void fini() {
+	public void fini() {
 
 	}
 
 	@Override
-	long getBalance(String address) throws IOException {
+	public long getBalance(String address) throws IOException {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/"
 				+ address + "/balance");
 		signRequest(httpGet);
@@ -157,7 +168,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	String getBestBlockHash() throws IOException {
+	public String getBestBlockHash() throws IOException {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
 		signRequest(httpGet);
 		CloseableHttpResponse res = httpClient.execute(httpGet);
@@ -175,7 +186,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	int getBestHeight() throws IOException {
+	public int getBestHeight() throws IOException {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
 		signRequest(httpGet);
 		CloseableHttpResponse res = httpClient.execute(httpGet);
@@ -193,7 +204,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	Block getBlock(String blockId) throws IOException {
+	public Block getBlock(String blockId) throws IOException {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blocks/"
 				+ blockId);
 		signRequest(httpGet);
@@ -229,7 +240,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	Transaction getTransaction(String transactionId) throws IOException {
+	public Transaction getTransaction(String transactionId) throws IOException {
 
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
 				+ "/transactions/" + transactionId);
@@ -290,7 +301,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	String[] getTransactions(String address) throws IOException {
+	public String[] getTransactions(String address) throws IOException {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/"
 				+ address + "/history");
 		signRequest(httpGet);
@@ -313,7 +324,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	Output[] getUnspentOutputs(String address) throws IOException {
+	public Output[] getUnspentOutputs(String address) throws IOException {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/"
 				+ address + "/unspentoutputs");
 		signRequest(httpGet);
@@ -351,19 +362,20 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				.<ConnectionSocketFactory> create()
 				.register("https", sslConnectionFactory)
 				.register("http", plainConnectionSocketFactory).build();
-		PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(registry);
+		PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(
+				registry);
 		HttpClientBuilder builder = HttpClientBuilder.create();
 		builder.setConnectionManager(connManager);
 		httpClient = builder.build();
 	}
 
 	@Override
-	boolean isMainnet() {
+	public boolean isMainnet() {
 		return this.endpoint.mainnet();
 	}
 
 	@Override
-	Subscription[] listSubscriptions() throws IOException {
+	public Subscription[] listSubscriptions() throws IOException {
 		HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
 				+ "/subscriptions");
 		signRequest(httpGet);
@@ -396,7 +408,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	void sendTransaction(String rawTransaction) throws IOException,
+	public void sendTransaction(String rawTransaction) throws IOException,
 			TransactionRejectedException {
 		try {
 			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
@@ -414,9 +426,11 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			int status = statusLine.getStatusCode();
 
 			if (status == 409) {
-				throw new IOException("conflicting transaction", new IOException(statusLine.toString()));
+				throw new IOException("conflicting transaction",
+						new IOException(statusLine.toString()));
 			} else if (status != 200) {
-				throw new IOException("failed to send transaction", new IOException(statusLine.toString()));
+				throw new IOException("failed to send transaction",
+						new IOException(statusLine.toString()));
 			}
 		} catch (JSONException e) {
 			throw new IOException("Failed to construct request", e);

@@ -32,7 +32,7 @@ public class Subscription {
 		return id;
 	}
 
-	protected String toJsonString() throws JSONException {
+	public String toJsonString() throws JSONException {
 		JSONObject json = new JSONObject();
 		json.put("action", this.getActionId());
 		json.put("address", this.getAddress());

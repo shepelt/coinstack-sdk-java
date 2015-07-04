@@ -3,6 +3,8 @@
  */
 package io.cloudwallet.coinstack;
 
+import io.cloudwallet.coinstack.backendadaptor.AbstractCoinStackAdaptor;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -111,7 +113,6 @@ public class MockCoinStackAdaptor extends AbstractCoinStackAdaptor {
 						"76a9140acd296e1ba0b5153623c3c55f2d5b45b1a25ce988ac"));
 		unspentOutputDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", outputList);
 	}
-	
 
 	public int getBestHeight() throws IOException {
 		return 345229;
@@ -142,38 +143,39 @@ public class MockCoinStackAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	void init() {
+	public void init() {
 	}
 
 	@Override
-	void fini() {
+	public void fini() {
 	}
 
 	@Override
-	void sendTransaction(String rawTransaction) throws IOException {
+	public void sendTransaction(String rawTransaction) throws IOException {
 		// do nothing
 	}
 
 	@Override
-	Subscription[] listSubscriptions() throws IOException {
+	public Subscription[] listSubscriptions() throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	void deleteSubscription(String id) throws IOException {
+	public void deleteSubscription(String id) throws IOException {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
-	String addSubscription(Subscription newSubscription) throws IOException {
+	public String addSubscription(Subscription newSubscription)
+			throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	boolean isMainnet() {
+	public boolean isMainnet() {
 		return true;
 	}
 

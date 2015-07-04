@@ -2,7 +2,7 @@ package io.cloudwallet.coinstack;
 
 public abstract class CredentialsProvider {
 
-	abstract String getAccessKey();
+	public abstract String getAccessKey();
 
-	abstract String getSecretKey();
+	public abstract String getSecretKey();
 }
