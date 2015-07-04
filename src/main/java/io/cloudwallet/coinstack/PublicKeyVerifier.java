@@ -1,7 +1,6 @@
 package io.cloudwallet.coinstack;
 
 import java.io.IOException;
-import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 

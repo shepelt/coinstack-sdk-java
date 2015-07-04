@@ -7,15 +7,10 @@ import io.cloudwallet.coinstack.backendadaptor.AbstractCoinStackAdaptor;
 import io.cloudwallet.coinstack.backendadaptor.CoreBackEndAdaptor;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyFactory;
-import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.commons.io.IOUtils;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Coin;

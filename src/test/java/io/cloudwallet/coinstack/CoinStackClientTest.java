@@ -8,8 +8,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,7 +16,6 @@ import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.Sha256Hash;
-import org.bitcoinj.core.TransactionConfidence;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.Wallet;
 import org.bitcoinj.params.MainNetParams;
@@ -26,8 +23,6 @@ import org.bitcoinj.wallet.WalletTransaction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author nepho
@@ -255,8 +250,6 @@ public class CoinStackClientTest {
 				new Output(
 						"45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e",
 						0, "", false, 4000l, "ffff") };
-		Logger logger = LoggerFactory.getLogger(Wallet.class);
-		
 		MockWallet wallet = new MockWallet(MainNetParams.get());
 		CoinStackClient.injectOutputs(wallet, outputBatch1);
 
@@ -276,7 +269,7 @@ public class CoinStackClientTest {
 						"45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e",
 						0, "", false, 4000l, "ffff") };
 		wallet = new MockWallet(MainNetParams.get());
-		CoinStackClient.injectOutputs(wallet, outputBatch1);
+		CoinStackClient.injectOutputs(wallet, outputBatch2);
 
 		assertEquals(3, wallet.getTxMap().size());
 		int nonDummyOutputCount = 0;
