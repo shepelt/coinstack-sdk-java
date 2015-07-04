@@ -349,6 +349,71 @@ public class CoinStackClient {
 		return Utils.HEX.encode(rawTx);
 	}
 
+	public String createSignedTransaction(TransactionBuilder builder,
+			String privateKeyWIF) throws IOException,
+			InsufficientFundException, DustyTransactionException {
+		Endpoint.init();
+		// check sanity test for parameters
+		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(
+				network);
+		for (Output output : builder.getOutputs()) {
+			Address destinationAddressParsed;
+			try {
+				destinationAddressParsed = new Address(network,
+						output.getAddress());
+			} catch (AddressFormatException e) {
+				throw new MalformedInputException(
+						"Malformed destination address");
+			}
+			txTemplate.addOutput(Coin.valueOf(output.getValue()),
+					destinationAddressParsed);
+		}
+		
+		// add OP_RETURN
+		if (null != builder.getData()) {
+			Script script = new ScriptBuilder().op(ScriptOpCodes.OP_RETURN)
+					.data(builder.getData()).build();
+			TransactionOutput output = new DataTransactionOutput(this.network,
+					txTemplate, Coin.ZERO, script.getProgram());
+			txTemplate.addOutput(output);
+		}
+
+		// derive address from private key
+		final ECKey signingKey;
+		try {
+			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
+		} catch (AddressFormatException e) {
+			throw new MalformedInputException("Parsing private key failed");
+		}
+		Address fromAddress = signingKey.toAddress(network);
+		String from = fromAddress.toString();
+
+		// get unspentout from address
+		Output[] outputs = this.getUnspentOutputs(from);
+		Wallet tempWallet = new Wallet(network);
+		tempWallet.allowSpendingUnconfirmedTransactions();
+		tempWallet.importKey(signingKey);
+		injectOutputs(tempWallet, outputs);
+
+		SendRequest request = SendRequest.forTx(txTemplate);
+		request.changeAddress = fromAddress;
+		request.fee = Coin.valueOf(builder.getFee());
+		request.feePerKb = Coin.ZERO;
+
+		org.bitcoinj.core.Transaction tx;
+		try {
+			tx = tempWallet.sendCoinsOffline(request);
+		} catch (InsufficientMoneyException e) {
+			throw new InsufficientFundException("Insufficient fund");
+		} catch (DustySendRequested e) {
+			throw new DustyTransactionException(
+					"Send amount below dust threshold");
+		}
+		byte[] rawTx = tx.bitcoinSerialize();
+		// // convert to string encoded hex and return
+		return Utils.HEX.encode(rawTx);
+	}
+
 	/**
 	 * Calculate transaction hash from raw transaction
 	 * 

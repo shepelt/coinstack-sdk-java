@@ -59,8 +59,8 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 
 		boolean exceptionRaised = false;
 		try {
-			coinStackClient
-					.sendTransaction("010000000124398225cf3d515a7ef7e816c37cbfd1cae9e01b401b90192c4dd479d23e7eab000000006b483045022100a8b331d506e265e79feb535a51dd5fbcd2724f0f6a1482cbea38d772ceae4e8c02206d7ee4bf2af3f8289310a09cc9760df6ae4768e24238cc13aee1739b837900ea012102ce3b0c53a06262e2a64e0639f2901447c2288ab437b5317fe05848e92a2ba25fffffffff0216120100000000001976a91415aad25727498a360e92eeb96db26f55fb38edcb88ac10270000000000001976a914abf0db3809c8ae1697f067a5c92171fd6ca3aaa988ac00000000");
+//			coinStackClient
+//					.sendTransaction("010000000124398225cf3d515a7ef7e816c37cbfd1cae9e01b401b90192c4dd479d23e7eab000000006b483045022100a8b331d506e265e79feb535a51dd5fbcd2724f0f6a1482cbea38d772ceae4e8c02206d7ee4bf2af3f8289310a09cc9760df6ae4768e24238cc13aee1739b837900ea012102ce3b0c53a06262e2a64e0639f2901447c2288ab437b5317fe05848e92a2ba25fffffffff0216120100000000001976a91415aad25727498a360e92eeb96db26f55fb38edcb88ac10270000000000001976a914abf0db3809c8ae1697f067a5c92171fd6ca3aaa988ac00000000");
 		} catch (Exception e) {
 			System.out.println(e);
 			exceptionRaised = true;
@@ -92,7 +92,7 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 
 		// try sending raw tx
 		try {
-			coinStackClient.sendTransaction(rawTx);
+//			coinStackClient.sendTransaction(rawTx);
 		} catch (Exception e) {
 			System.out.println(e);
 			System.out.println(e.getCause());
@@ -149,5 +149,30 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		assertEquals(1, subscriptions.length); // there should be only one
 												// subscription
 		assertEquals(subscriptionId, subscriptions[0].getId());
+	}
+	
+	@Test
+	public void testBuildTransaction() throws Exception {
+		String privateKeyWIF = "Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd";
+		String to = "1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168";
+		long amount = CoinStackClient.convertToSatoshi("0.0001");
+		long fee = CoinStackClient.convertToSatoshi("0.0001");
+		TransactionBuilder builder = new TransactionBuilder();
+		builder.addOutput(to, amount);
+		builder.setFee(fee);
+		
+		String signedTx = coinStackClient.createSignedTransaction(builder, privateKeyWIF);
+		System.out.println(signedTx);
+		assertNotNull(signedTx);
+		
+		TransactionBuilder dataTx = new TransactionBuilder();
+		dataTx.addOutput(to, amount);
+		dataTx.setData("hello world".getBytes());
+		dataTx.setFee(fee);
+		
+		String signedDataTx = coinStackClient.createSignedTransaction(dataTx, privateKeyWIF);
+		System.out.println(signedDataTx);
+		assertNotNull(signedDataTx);
+//		coinStackClient.sendTransaction(signedDataTx);
 	}
 }
