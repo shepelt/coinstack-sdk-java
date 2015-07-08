@@ -21,7 +21,6 @@ public class CloudWalletBackEndAdaptorHMACTest {
 		String apiKey = "eb90dbf0-e98c-11e4-b571-0800200c9a66";
 		String secret = "f8bd5b50-e98c-11e4-b571-0800200c9a66";
 		HMAC.signRequest(httpGet, apiKey, secret, timesamp);
-
 		assertEquals(1, httpGet.getHeaders("Authorization").length);
 	}
 }
