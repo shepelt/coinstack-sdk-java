@@ -4,6 +4,10 @@
 package io.cloudwallet.coinstack;
 
 import static org.junit.Assert.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import io.cloudwallet.coinstack.backendadaptor.CoreBackEndAdaptor;
 import io.cloudwallet.coinstack.model.CredentialsProvider;
 import io.cloudwallet.coinstack.model.Subscription;
@@ -13,6 +17,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
+ * 
  * @author nepho
  *
  */
@@ -153,9 +158,11 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 	
 	@Test
 	public void testBuildTransaction() throws Exception {
-		String privateKeyWIF = "Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd";
-		String to = "1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168";
-		long amount = CoinStackClient.convertToSatoshi("0.0001");
+		String privateKeyWIF = "5J82YdoYrtE3YGxjFW9Rr3R21qtDH9gFwkphHtnMpijcHs2PH7M";
+		String to = "3F3LvS6FbeeHRuW7cKF9pdnx5xKad4zjXh";
+		
+		//String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
+		long amount = CoinStackClient.convertToSatoshi("0.0003");
 		long fee = CoinStackClient.convertToSatoshi("0.0001");
 		TransactionBuilder builder = new TransactionBuilder();
 		builder.addOutput(to, amount);
@@ -173,6 +180,31 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		String signedDataTx = coinStackClient.createSignedTransaction(dataTx, privateKeyWIF);
 		System.out.println(signedDataTx);
 		assertNotNull(signedDataTx);
-//		coinStackClient.sendTransaction(signedDataTx);
+	//	coinStackClient.sendTransaction(signedTx);
+	}
+	
+	@Test
+	public void testMultiSigTransaction() throws Exception {
+		String privateKey1 = "5KF55BbKeZZqmAmpQAovn7KoBRjVdW4UN9uPGZoK1y9RrkPhnhA";
+		//String privateKey2 = "5KF55BbKeZZqmAmpQAovn7KoBRjVdW4UN9uPGZoK1y9RrkPhnhA";
+		String privateKey3 = "5Jd7kKaKRNkqALDzyY1nQgPBd5JmmPr3CTBFhQ3fsjcuRLqjjTg";
+		String redeemScript = "52410421955a8ec650aed2748344810b5ab057d4b87244759914ad40086fb526cd487868b70fae9652eff933b28fcabfac44f282800fd10b241d989453ad35dcb2191241045e55d7adf05bb2d9e771904f3b4b0116c0bca34c226930a4a7ac16dc7c1946f5c538a4d9882833af4378ae0e43465173757f86cd2d59ba2193624ea6aa1ef7064104a95f8b9cfb3fdb970d56cd093a54e557083a3cfc2ac0d7bfb260abb69544c706e7b382429b9cf6919fd25449b5bdf0c6fcf4bda5576f88b742366f05cc8068e553ae";
+		List<String> prikeys = new ArrayList<String>();
+		prikeys.add(privateKey1);
+		prikeys.add(privateKey3);
+		//prikeys.add(privateKey3);
+		//String to = "1Ce8WxgwjarzLtV6zkUGgdwmAe5yjHoPXX";
+		String to = "1F444Loh6KzUQ8u8mAsz5upBtQ356vN95s";
+		//1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168
+		long amount = CoinStackClient.convertToSatoshi("0.0001");
+		long fee = CoinStackClient.convertToSatoshi("0.0001");
+		TransactionBuilder builder = new TransactionBuilder();
+		builder.addOutput(to, amount);
+		builder.setFee(fee);
+		
+		String signedTx = coinStackClient.createMultiSigTransaction(builder, prikeys, redeemScript);
+		System.out.println(signedTx);
+		assertNotNull(signedTx);
+	//	coinStackClient.sendTransaction(signedTx);
 	}
 }

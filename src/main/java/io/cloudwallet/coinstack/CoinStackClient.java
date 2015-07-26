@@ -19,31 +19,45 @@ import io.cloudwallet.coinstack.model.Subscription;
 import io.cloudwallet.coinstack.model.Transaction;
 import io.cloudwallet.coinstack.util.EnvironmentVariableCredentialsProvider;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.ECKey;
+import org.bitcoinj.core.ECKey.ECDSASignature;
 import org.bitcoinj.core.InsufficientMoneyException;
 import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.ScriptException;
 import org.bitcoinj.core.Sha256Hash;
+import org.bitcoinj.core.Transaction.SigHash;
 import org.bitcoinj.core.TransactionConfidence;
+import org.bitcoinj.core.TransactionInput;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.Utils;
 import org.bitcoinj.core.Wallet;
 import org.bitcoinj.core.Wallet.DustySendRequested;
 import org.bitcoinj.core.Wallet.SendRequest;
+import org.bitcoinj.crypto.TransactionSignature;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptOpCodes;
+import org.bitcoinj.wallet.RedeemData;
 import org.bitcoinj.wallet.WalletTransaction;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * A client class for accessing Bitcoin Blockchain through CoinStack. Provides
@@ -432,6 +446,94 @@ public class CoinStackClient {
 		// // convert to string encoded hex and return
 		return Utils.HEX.encode(rawTx);
 	}
+	
+
+	public String createSignedTransactionNoneWallet(TransactionBuilder builder,
+			String privateKeyWIF) throws IOException,
+			InsufficientFundException, DustyTransactionException {
+		Endpoint.init();
+		// check sanity test for parameters
+		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(
+				network);
+		for (Output output : builder.getOutputs()) {
+			Address destinationAddressParsed;
+			try {
+				destinationAddressParsed = new Address(network,
+						output.getAddress());
+			} catch (AddressFormatException e) {
+				throw new MalformedInputException(
+						"Malformed destination address");
+			}
+			txTemplate.addOutput(Coin.valueOf(output.getValue()),
+					destinationAddressParsed);
+		}
+
+		// add OP_RETURN
+		if (null != builder.getData()) {
+			Script script = new ScriptBuilder().op(ScriptOpCodes.OP_RETURN)
+					.data(builder.getData()).build();
+			TransactionOutput output = new DataTransactionOutput(this.network,
+					txTemplate, Coin.ZERO, script.getProgram());
+			txTemplate.addOutput(output);
+		}
+
+		// derive address from private key
+		final ECKey signingKey;
+		try {
+			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
+		} catch (AddressFormatException e) {
+			throw new MalformedInputException("Parsing private key failed");
+		}
+		Address fromAddress = signingKey.toAddress(network);
+		String from = fromAddress.toString();
+
+		// get unspentout from address
+		Output[] outputs = this.getUnspentOutputs(from);
+		//Wallet tempWallet = new Wallet(network);
+		//tempWallet.allowSpendingUnconfirmedTransactions();
+		//tempWallet.importKey(signingKey);
+		injectOutputs(txTemplate, outputs, signingKey);
+
+		SendRequest request = SendRequest.forTx(txTemplate);
+		request.changeAddress = fromAddress;
+		request.fee = Coin.valueOf(builder.getFee());
+		request.feePerKb = Coin.ZERO;
+
+		
+		return txTemplate.toString();
+	}
+	
+	private void injectOutputs(org.bitcoinj.core.Transaction txTemplate, Output[] outputs, ECKey signingKey) {
+		// TODO Auto-generated method stub
+		// sort outputs with txid and output index
+		Arrays.sort(outputs, outputComparator);
+		TemporaryTransaction tx = null;
+		for (Output output : outputs) {
+			Sha256Hash outputHash = new Sha256Hash(
+					CoinStackClient.convertEndianness(output.getTransactionId()));
+			if (tx == null || !tx.getHash().equals(outputHash)) {
+				tx = new TemporaryTransaction(MainNetParams.get(), outputHash);
+				tx.getConfidence().setConfidenceType(
+						TransactionConfidence.ConfidenceType.BUILDING);
+			}
+
+			// fill hole between indexes with dummies
+			while (tx.getOutputs().size() < output.getIndex()) {
+				tx.addOutput(new TransactionOutput(MainNetParams.get(), tx,
+						Coin.NEGATIVE_SATOSHI, new byte[] {}));
+			}
+
+			tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin
+					.valueOf(output.getValue()), org.bitcoinj.core.Utils.HEX
+					.decode(output.getScript())));
+			
+			txTemplate.addInput(tx.getOutput(output.getIndex()));
+		}
+		
+		Script script = tx.getOutput(0).getScriptPubKey();
+		
+		
+	}
 
 	/**
 	 * Calculate transaction hash from raw transaction
@@ -539,7 +641,19 @@ public class CoinStackClient {
 			}
 		}
 	};
-
+	
+	private static Comparator<ECKey> ECKeyComparator = new Comparator<ECKey>() {
+		public int compare(ECKey ec1, ECKey ec2) {
+			int idCompare = (Hex.encodeHexString(ec1.getPubKeyHash())).compareTo(Hex.encodeHexString(ec2.getPubKeyHash()));
+			if (idCompare < 0) {
+				return 1;
+			} else if (idCompare > 0) {
+				return -1;
+			} 
+			return -1;
+		}
+	};
+	
 	private static class TemporaryTransaction extends
 			org.bitcoinj.core.Transaction {
 		private static final long serialVersionUID = -6832934294927540476L;
@@ -695,4 +809,158 @@ public class CoinStackClient {
 		Endpoint.init();
 		return coinStackAdaptor.addSubscription(newSubscription);
 	}
+	
+	public String createRedeemScript(int threshold, List<byte[]> pubkeys) {
+		List<ECKey> eckeys = new ArrayList<ECKey>();
+		for(int i = 0 ; i < pubkeys.size(); i++) {
+			eckeys.add(ECKey.fromPublicOnly(pubkeys.get(i)));			
+		}
+		Script sc = ScriptBuilder.createRedeemScript(threshold, eckeys);
+		return new String(Hex.encodeHex(sc.getProgram()));
+	}
+	
+	public Script createRedeemScriptToScript(int threshold, List<byte[]> pubkeys) {
+		List<ECKey> eckeys = new ArrayList<ECKey>();
+		for(int i = 0 ; i < pubkeys.size(); i++) {
+			eckeys.add(ECKey.fromPublicOnly(pubkeys.get(i)));			
+		}
+		Script sc = ScriptBuilder.createRedeemScript(threshold, eckeys);
+		return sc;
+	}
+	
+	public String createAddressFromRedeemScript(Script redeemScript) throws DecoderException {
+		Script sc = ScriptBuilder.createP2SHOutputScript(redeemScript);
+		Address address = Address.fromP2SHScript(MainNetParams.get(), sc);
+		return address.toString();
+	}
+	
+	public String createMultiSigTransaction(TransactionBuilder builder,
+			List<String> privateKeys, String redeemScript) throws IOException,
+			InsufficientFundException, DustyTransactionException, AddressFormatException {
+		Endpoint.init();
+
+		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(
+				network);
+
+		//Transaction output added
+		long totalSpendValue = 0;
+		for (Output output : builder.getOutputs()) {
+			Address destinationAddressParsed;
+			try {
+				destinationAddressParsed = new Address(network,
+						output.getAddress());
+			} catch (AddressFormatException e) {
+				throw new MalformedInputException(
+						"Malformed destination address");
+			}
+			txTemplate.addOutput(Coin.valueOf(output.getValue()),
+					destinationAddressParsed);
+			totalSpendValue += output.getValue(); 
+		}
+		System.out.println("totalSpendValue : " + totalSpendValue);
+		// add OP_RETURN if there is any
+		if (null != builder.getData()) {
+			Script script = new ScriptBuilder().op(ScriptOpCodes.OP_RETURN)
+					.data(builder.getData()).build();
+			TransactionOutput output = new DataTransactionOutput(this.network,
+					txTemplate, Coin.ZERO, script.getProgram());
+			txTemplate.addOutput(output);
+		}
+		
+		// derive address from reddemScript
+		String from = null;
+		Script redeem = null;
+		try {
+			redeem = new Script(Hex.decodeHex(redeemScript.toCharArray()));
+			from = createAddressFromRedeemScript(redeem);
+		} catch (DecoderException e1) {
+			e1.printStackTrace();
+		}
+		
+		// get unspentout from address
+		// Transaction input added
+		Output[] outputs = this.getUnspentOutputs(from);
+		injectOutputs(txTemplate, outputs, privateKeys, redeem, totalSpendValue + builder.getFee(),  from);
+		
+		byte[] rawTx = txTemplate.bitcoinSerialize();
+		// // convert to string encoded hex and return
+		return Utils.HEX.encode(rawTx);
+	}
+	
+	protected  long injectOutputs(org.bitcoinj.core.Transaction transaction, Output[] outputs, 
+			List<String> privateKeys,  Script redeemScript, long restFee, String from) throws IOException, AddressFormatException {
+		long totalValue = 0;
+		Arrays.sort(outputs, outputComparator);
+		org.bitcoinj.core.Transaction tx = null;
+		for (Output output : outputs) {
+			Sha256Hash outputHash = new Sha256Hash(
+					CoinStackClient.convertEndianness(output.getTransactionId()));
+
+			if (tx == null || !tx.getHash().equals(outputHash)) {
+				tx = new TemporaryTransaction(MainNetParams.get(), outputHash);
+				tx.getConfidence().setConfidenceType(
+						TransactionConfidence.ConfidenceType.BUILDING);
+			}
+
+			transaction.getConfidence().setConfidenceType(
+					TransactionConfidence.ConfidenceType.BUILDING);
+			
+			// fill hole between indexes with dummies
+			while (tx.getOutputs().size() < output.getIndex()) {
+				tx.addOutput(new TransactionOutput(MainNetParams.get(), tx,
+						Coin.NEGATIVE_SATOSHI, new byte[] {}));
+			}
+			
+			tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin
+					.valueOf(output.getValue()), org.bitcoinj.core.Utils.HEX
+					.decode(output.getScript())));
+
+			transaction.addInput(tx.getOutput(tx.getOutputs().size()-1)); 
+			totalValue += output.getValue();
+		}
+		long rest = totalValue - restFee;
+		if(rest > 0) {
+			try {
+				transaction.addOutput(Coin.valueOf(rest),
+					new Address(network, from));
+			} catch (AddressFormatException e) {
+		
+				e.printStackTrace();
+			}
+		}
+		List<TransactionSignature> signatures = new ArrayList<TransactionSignature>();
+		List<ECKey> eckeys = new ArrayList<ECKey>();
+		for(int i =0  ; i < privateKeys.size() ; i++) {
+			ECKey eckey = null;
+			try {
+				eckey = new DumpedPrivateKey(network, privateKeys.get(i)).getKey();
+				System.out.println("ec : " + new String(Hex.encodeHex(eckey.getPubKey())));
+				eckeys.add(eckey);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		ECKey [] ecKeyArrays = eckeys.toArray(new ECKey [0]);
+		Arrays.sort(ecKeyArrays, ECKeyComparator);
+		for(int j = 0 ; j < outputs.length ; j++) {
+			for(int i =0  ; i < privateKeys.size() ; i++) {
+				Sha256Hash sighash = transaction.hashForSignature(j, redeemScript,SigHash.ALL, false);
+				ECKey.ECDSASignature mySignature = ecKeyArrays[i].sign(sighash);
+				TransactionSignature signature = new TransactionSignature(mySignature, SigHash.ALL , false);
+				signatures.add(signature) ;
+			}
+		Script inputScript = ScriptBuilder.createP2SHMultiSigInputScript(signatures, redeemScript);
+		transaction.getInput(j).setScriptSig(inputScript);
+		signatures.clear();
+		}
+		return totalValue;
+	}
+	
+	public static String convertIntoEvenlength(String input) {
+		if(input.length()%2 == 1)
+		    input = "0" + input;
+		return input;
+	}
+	
+
 }

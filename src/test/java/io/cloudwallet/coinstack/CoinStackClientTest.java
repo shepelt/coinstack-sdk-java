@@ -4,6 +4,9 @@
 package io.cloudwallet.coinstack;
 
 import static org.junit.Assert.assertEquals;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -12,7 +15,10 @@ import io.cloudwallet.coinstack.model.BlockchainStatus;
 import io.cloudwallet.coinstack.model.Output;
 import io.cloudwallet.coinstack.model.Transaction;
 
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.bitcoinj.core.Coin;
@@ -23,6 +29,7 @@ import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.Wallet;
 import org.bitcoinj.params.MainNetParams;
+import org.bitcoinj.script.Script;
 import org.bitcoinj.wallet.WalletTransaction;
 import org.junit.After;
 import org.junit.Before;
@@ -298,5 +305,45 @@ public class CoinStackClientTest {
 		String original = "1234566780";
 		String expected = "8067563412";
 		assertEquals(expected, CoinStackClient.convertEndianness(original));
+	}
+	
+	@Test
+	public void testRedeemScript() throws UnsupportedEncodingException, DecoderException {
+		String publickey1 = "04a93d29a957d3e0064f6fde7a6c296e1ab2643f877d98ca5f52bdb9df43d3f70dfc040ee212b9bae63b2cf266ca677d31d72db53d1e928851d131d1cb9d9bde25";
+		String publickey2 = "04c30518fb1d5f0e96ba9f262f31260c8ce02e322494436e4ccb0981ba687a1a2626ab30911ddad22023bcbdac1329fc73e999ff2836c608e9c8e405f4e6c0b615";
+		String publickey3 = "04486a7c8754177b488982dcb13bd37fa6005a439dce55101c35ba3c5f60928036920e72a59429f0425967b735a1c52c9d2018a5ef4f63b8a8473ded4a29d5bad0";
+		List<byte[]> pubkeys = new ArrayList<byte[]>(3);
+		//System.out.println("publickey1.getBytes()" + publickey1.getBytes().toString());
+		//System.out.println("publickey1.()" + publickey1);
+		pubkeys.add(Hex.decodeHex(publickey1.toCharArray()));
+		pubkeys.add(Hex.decodeHex(publickey2.toCharArray()));
+		pubkeys.add(Hex.decodeHex(publickey3.toCharArray()));
+		
+		String redeemScript = coinStackClient.createRedeemScript(2, pubkeys);
+		System.out.println("redeem : " + redeemScript);
+	}
+	
+//	@Test
+//	public void testRedeemScriptAddress() throws UnsupportedEncodingException, DecoderException {
+//		String publickey1 = "04a93d29a957d3e0064f6fde7a6c296e1ab2643f877d98ca5f52bdb9df43d3f70dfc040ee212b9bae63b2cf266ca677d31d72db53d1e928851d131d1cb9d9bde25";
+//		String publickey2 = "04c30518fb1d5f0e96ba9f262f31260c8ce02e322494436e4ccb0981ba687a1a2626ab30911ddad22023bcbdac1329fc73e999ff2836c608e9c8e405f4e6c0b615";
+//		String publickey3 = "04486a7c8754177b488982dcb13bd37fa6005a439dce55101c35ba3c5f60928036920e72a59429f0425967b735a1c52c9d2018a5ef4f63b8a8473ded4a29d5bad0";
+//		List<byte[]> pubkeys = new ArrayList<byte[]>(3);
+//		//System.out.println("publickey1.getBytes()" + publickey1.getBytes().toString());
+//		//System.out.println("publickey1.()" + publickey1);
+//		pubkeys.add(Hex.decodeHex(publickey1.toCharArray()));
+//		pubkeys.add(Hex.decodeHex(publickey2.toCharArray()));
+//		pubkeys.add(Hex.decodeHex(publickey3.toCharArray()));
+//		
+//		Script redeemScript = coinStackClient.createRedeemScriptToScript(2, pubkeys);
+//		String address = coinStackClient.createAddressFromRedeemScript(redeemScript);
+//		System.out.println("address : " + address);
+//	}
+	
+	@Test
+	public void testMultiSig() throws UnsupportedEncodingException, DecoderException {
+		String privateKey1 = "5K8ARa5snuaGorNRhdZEuDLrrTEUTsV5nvLGcCzTACqZejhPG1N";
+		String privateKey2 = "5HtEeWjHRRPGZmASVJhY9DCHvPzDfavnKt6rWpaaNaGw4macvGp";
+		List<byte[]> pubkeys = new ArrayList<byte[]>(3);
 	}
 }
