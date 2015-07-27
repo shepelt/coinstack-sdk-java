@@ -19,12 +19,11 @@ import io.cloudwallet.coinstack.model.Subscription;
 import io.cloudwallet.coinstack.model.Transaction;
 import io.cloudwallet.coinstack.util.EnvironmentVariableCredentialsProvider;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -35,14 +34,11 @@ import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.ECKey;
-import org.bitcoinj.core.ECKey.ECDSASignature;
 import org.bitcoinj.core.InsufficientMoneyException;
 import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.ScriptException;
 import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.core.Transaction.SigHash;
 import org.bitcoinj.core.TransactionConfidence;
-import org.bitcoinj.core.TransactionInput;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.Utils;
 import org.bitcoinj.core.Wallet;
@@ -54,10 +50,7 @@ import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptOpCodes;
-import org.bitcoinj.wallet.RedeemData;
 import org.bitcoinj.wallet.WalletTransaction;
-
-import com.google.common.collect.ImmutableList;
 
 /**
  * A client class for accessing Bitcoin Blockchain through CoinStack. Provides
@@ -553,7 +546,7 @@ public class CoinStackClient {
 			}
 		}
 	};
-	
+/*	
 	private static Comparator<ECKey> ECKeyComparator = new Comparator<ECKey>() {
 		public int compare(ECKey ec1, ECKey ec2) {
 			int idCompare = (Hex.encodeHexString(ec1.getPubKeyHash())).compareTo(Hex.encodeHexString(ec2.getPubKeyHash()));
@@ -565,7 +558,7 @@ public class CoinStackClient {
 			return -1;
 		}
 	};
-	
+*/
 	private static class TemporaryTransaction extends
 			org.bitcoinj.core.Transaction {
 		private static final long serialVersionUID = -6832934294927540476L;
@@ -731,7 +724,7 @@ public class CoinStackClient {
 		return new String(Hex.encodeHex(sc.getProgram()));
 	}
 	
-	public Script createRedeemScriptToScript(int threshold, List<byte[]> pubkeys) {
+	private Script createRedeemScriptToScript(int threshold, List<byte[]> pubkeys) {
 		List<ECKey> eckeys = new ArrayList<ECKey>();
 		for(int i = 0 ; i < pubkeys.size(); i++) {
 			eckeys.add(ECKey.fromPublicOnly(pubkeys.get(i)));			
@@ -831,6 +824,11 @@ public class CoinStackClient {
 			totalValue += output.getValue();
 		}
 		long rest = totalValue - restFee;
+		if(rest < 0) {
+			throw  new InsufficientFundException("Insufficient fund");
+		}
+		
+		System.out.println("res : " + rest + " Sendingfee : " + restFee);
 		if(rest > 0) {
 			try {
 				transaction.addOutput(Coin.valueOf(rest),
@@ -852,12 +850,14 @@ public class CoinStackClient {
 				e.printStackTrace();
 			}
 		}
-		ECKey [] ecKeyArrays = eckeys.toArray(new ECKey [0]);
-		Arrays.sort(ecKeyArrays, ECKeyComparator);
+		//ECKey [] ecKeyArrays = eckeys.toArray(new ECKey [0]);
+		//Arrays.sort(ecKeyArrays, ECKeyComparator);
+		List<ECKey> pubkeys = new ArrayList<ECKey>(eckeys);
+		Collections.sort(pubkeys, ECKey.PUBKEY_COMPARATOR);
 		for(int j = 0 ; j < outputs.length ; j++) {
 			for(int i =0  ; i < privateKeys.size() ; i++) {
 				Sha256Hash sighash = transaction.hashForSignature(j, redeemScript,SigHash.ALL, false);
-				ECKey.ECDSASignature mySignature = ecKeyArrays[i].sign(sighash);
+				ECKey.ECDSASignature mySignature = pubkeys.get(i).sign(sighash);
 				TransactionSignature signature = new TransactionSignature(mySignature, SigHash.ALL , false);
 				signatures.add(signature) ;
 			}

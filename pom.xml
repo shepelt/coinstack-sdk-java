@@ -61,6 +61,14 @@
 				</includes>
 			</resource>
 		</resources>
+		<testResources>
+			<testResource>
+				<directory>.</directory>
+				<includes>
+					<include>keys/**/*.*</include>
+				</includes>
+			</testResource>
+		</testResources>
 	</build>
 
 	<dependencies>
