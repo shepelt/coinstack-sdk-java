@@ -19,12 +19,19 @@ import io.cloudwallet.coinstack.model.Subscription;
 import io.cloudwallet.coinstack.model.Transaction;
 import io.cloudwallet.coinstack.util.EnvironmentVariableCredentialsProvider;
 
+import org.bitcoinj.core.ECKey;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.codec.DecoderException;
@@ -33,12 +40,12 @@ import org.bitcoinj.core.Address;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.DumpedPrivateKey;
-import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.InsufficientMoneyException;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.core.Transaction.SigHash;
 import org.bitcoinj.core.TransactionConfidence;
+import org.bitcoinj.core.TransactionInput;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.Utils;
 import org.bitcoinj.core.Wallet;
@@ -51,6 +58,8 @@ import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptOpCodes;
 import org.bitcoinj.wallet.WalletTransaction;
+
+import com.google.common.primitives.UnsignedBytes;
 
 /**
  * A client class for accessing Bitcoin Blockchain through CoinStack. Provides
@@ -721,9 +730,11 @@ public class CoinStackClient {
 			eckeys.add(ECKey.fromPublicOnly(pubkeys.get(i)));			
 		}
 		Script sc = ScriptBuilder.createRedeemScript(threshold, eckeys);
+		
 		return new String(Hex.encodeHex(sc.getProgram()));
 	}
 	
+	@SuppressWarnings("unused")
 	private Script createRedeemScriptToScript(int threshold, List<byte[]> pubkeys) {
 		List<ECKey> eckeys = new ArrayList<ECKey>();
 		for(int i = 0 ; i < pubkeys.size(); i++) {
@@ -762,7 +773,7 @@ public class CoinStackClient {
 					destinationAddressParsed);
 			totalSpendValue += output.getValue(); 
 		}
-		System.out.println("totalSpendValue : " + totalSpendValue);
+
 		// add OP_RETURN if there is any
 		if (null != builder.getData()) {
 			Script script = new ScriptBuilder().op(ScriptOpCodes.OP_RETURN)
@@ -781,7 +792,7 @@ public class CoinStackClient {
 		} catch (DecoderException e1) {
 			e1.printStackTrace();
 		}
-		
+
 		// get unspentout from address
 		// Transaction input added
 		Output[] outputs = this.getUnspentOutputs(from);
@@ -828,7 +839,6 @@ public class CoinStackClient {
 			throw  new InsufficientFundException("Insufficient fund");
 		}
 		
-		System.out.println("res : " + rest + " Sendingfee : " + restFee);
 		if(rest > 0) {
 			try {
 				transaction.addOutput(Coin.valueOf(rest),
@@ -844,7 +854,6 @@ public class CoinStackClient {
 			ECKey eckey = null;
 			try {
 				eckey = new DumpedPrivateKey(network, privateKeys.get(i)).getKey();
-				System.out.println("ec : " + new String(Hex.encodeHex(eckey.getPubKey())));
 				eckeys.add(eckey);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -855,24 +864,217 @@ public class CoinStackClient {
 		List<ECKey> pubkeys = new ArrayList<ECKey>(eckeys);
 		Collections.sort(pubkeys, ECKey.PUBKEY_COMPARATOR);
 		for(int j = 0 ; j < outputs.length ; j++) {
+			Sha256Hash sighash = transaction.hashForSignature(j, redeemScript,SigHash.ALL, false);
 			for(int i =0  ; i < privateKeys.size() ; i++) {
-				Sha256Hash sighash = transaction.hashForSignature(j, redeemScript,SigHash.ALL, false);
+
 				ECKey.ECDSASignature mySignature = pubkeys.get(i).sign(sighash);
 				TransactionSignature signature = new TransactionSignature(mySignature, SigHash.ALL , false);
-				signatures.add(signature) ;
+				signatures.add(signature);
 			}
 		Script inputScript = ScriptBuilder.createP2SHMultiSigInputScript(signatures, redeemScript);
+
 		transaction.getInput(j).setScriptSig(inputScript);
 		signatures.clear();
 		}
 		return totalValue;
 	}
+
 	
-	public static String convertIntoEvenlength(String input) {
-		if(input.length()%2 == 1)
-		    input = "0" + input;
-		return input;
+	protected  long injectOutputs(org.bitcoinj.core.Transaction transaction, Output[] outputs, 
+			String privateKey,  Script redeemScript, long restFee, String from,
+			List<HashMap <byte [] , List<byte []>>> sig) throws IOException, AddressFormatException {
+		long totalValue = 0;
+		Arrays.sort(outputs, outputComparator);
+		org.bitcoinj.core.Transaction tx = null;
+		for (Output output : outputs) {
+			Sha256Hash outputHash = new Sha256Hash(
+					CoinStackClient.convertEndianness(output.getTransactionId()));
+
+			if (tx == null || !tx.getHash().equals(outputHash)) {
+				tx = new TemporaryTransaction(MainNetParams.get(), outputHash);
+				tx.getConfidence().setConfidenceType(
+						TransactionConfidence.ConfidenceType.BUILDING);
+			}
+
+			transaction.getConfidence().setConfidenceType(
+					TransactionConfidence.ConfidenceType.BUILDING);
+			
+			// fill hole between indexes with dummies
+			while (tx.getOutputs().size() < output.getIndex()) {
+				tx.addOutput(new TransactionOutput(MainNetParams.get(), tx,
+						Coin.NEGATIVE_SATOSHI, new byte[] {}));
+			}
+			
+			tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin
+					.valueOf(output.getValue()), org.bitcoinj.core.Utils.HEX
+					.decode(output.getScript())));
+
+			transaction.addInput(tx.getOutput(tx.getOutputs().size()-1)); 
+			totalValue += output.getValue(); 
+		}
+		long rest = totalValue - restFee;
+		if(rest < 0) {
+			throw  new InsufficientFundException("Insufficient fund");
+		}
+		
+		if(rest > 0) {
+			try {
+				transaction.addOutput(Coin.valueOf(rest),
+					new Address(network, from));
+			} catch (AddressFormatException e) {
+		
+				e.printStackTrace();
+			}
+		}
+		HashMap <byte [] , List<byte []>> hm = new HashMap<byte [] , List<byte []>>();
+		ECKey eckey = new DumpedPrivateKey(network, privateKey).getKey();
+		List<byte []> tempTs = new ArrayList<byte []>();
+		byte [] pubkey = eckey.getPubKey();
+		for(int i = 0 ; i < outputs.length ; i ++) {
+			Sha256Hash sighash = transaction.hashForSignature(i, redeemScript,SigHash.ALL, false);
+			ECKey.ECDSASignature mySignature = eckey.sign(sighash);
+			TransactionSignature signature = new TransactionSignature(mySignature, SigHash.ALL , false);
+			tempTs.add(signature.encodeToBitcoin()) ;
+		}
+		
+		hm.put(pubkey,tempTs);
+		sig.add(hm);
+		
+		return totalValue;
 	}
 	
+	
+	@SuppressWarnings("unchecked")
+	public byte [] addSignatureToMultisig(String transactionSerialized, 
+			byte [] signatureList, String myPrivateKey, String redeemScript, StringBuilder txByte) throws  IOException {
 
+		org.bitcoinj.core.Transaction transaction = new org.bitcoinj.core.Transaction(network, 
+				org.bitcoinj.core.Utils.HEX.decode(transactionSerialized));
+		
+		ObjectInputStream ois = null;
+		ByteArrayInputStream bis = null;
+		try {
+			 bis = new ByteArrayInputStream(signatureList);
+		     ois = new ObjectInputStream(bis);
+		} catch (IOException e2) {
+			e2.printStackTrace();
+		}
+	   List<HashMap<byte[], List<byte []>>> sig = null;
+		try {
+			sig = (List< HashMap <byte [] , List<byte []>>>) ois.readObject();
+		} catch (ClassNotFoundException e2) {
+			e2.printStackTrace();
+		}
+		    
+		Script redeem = null;
+		ECKey eckey = null;
+		HashMap <byte [] , List<byte []>> hm = new HashMap<byte [] , List<byte []>>(); 
+		try {
+			redeem = new Script(Hex.decodeHex(redeemScript.toCharArray()));
+			eckey = new DumpedPrivateKey(network, myPrivateKey).getKey();
+		} catch (DecoderException e1) {
+			e1.printStackTrace();
+		} catch (AddressFormatException e) {
+			e.printStackTrace();
+		}
+		byte [] pubkey = eckey.getPubKey();
+		List<byte []> tempTs = new ArrayList<byte []>();
+		for(int i = 0 ; i < transaction.getInputs().size() ; i ++) {
+			Sha256Hash sighash = transaction.hashForSignature(i, redeem,SigHash.ALL, false);
+			ECKey.ECDSASignature mySignature = eckey.sign(sighash);
+			TransactionSignature signature = new TransactionSignature(mySignature, SigHash.ALL , false);
+			tempTs.add(signature.encodeToBitcoin()) ;
+		}
+		hm.put(pubkey,tempTs);
+		sig.add(hm);
+		
+		Collections.sort(sig, SIGNATURE_COMPARATOR);
+		
+		List<TransactionSignature> signatures = new ArrayList<TransactionSignature>();
+		for(int i = 0 ; i < transaction.getInputs().size() ; i++) {
+			for(int j =0  ; j < sig.size() ; j++) {
+				List<byte []> tempSig = sig.get(j).values().iterator().next();
+				TransactionSignature tempsig = TransactionSignature.decodeFromBitcoin(tempSig.get(i), false);
+				signatures.add(tempsig);
+			}
+			Script inputScript = ScriptBuilder.createP2SHMultiSigInputScript(signatures, redeem);
+			transaction.getInput(i).setScriptSig(inputScript);
+			signatures.clear();
+		}
+		
+		byte[] rawTx = transaction.bitcoinSerialize();
+		txByte.append(Utils.HEX.encode(rawTx));
+		
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(bos);
+		oos.writeObject(sig);
+		byte [] SignatureList = bos.toByteArray();
+		return SignatureList;
+	}
+	
+	public byte [] CreateMultiSigTransactionWithPartialSign(TransactionBuilder builder,
+			String privateKeys, String redeemScript, StringBuilder txByte) throws IOException,
+			InsufficientFundException, DustyTransactionException, AddressFormatException {
+		Endpoint.init();
+
+		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(
+				network);
+		List<HashMap <byte [] , List<byte []>>> ts = new ArrayList<HashMap <byte [] , List<byte []>>>();
+
+		//Transaction output added
+		long totalSpendValue = 0;
+		for (Output output : builder.getOutputs()) {
+			Address destinationAddressParsed;
+			try {
+				destinationAddressParsed = new Address(network,
+						output.getAddress());
+			} catch (AddressFormatException e) {
+				throw new MalformedInputException(
+						"Malformed destination address");
+			}
+			txTemplate.addOutput(Coin.valueOf(output.getValue()),
+					destinationAddressParsed);
+			totalSpendValue += output.getValue(); 
+		}
+
+		// add OP_RETURN if there is any
+		if (null != builder.getData()) {
+			Script script = new ScriptBuilder().op(ScriptOpCodes.OP_RETURN)
+					.data(builder.getData()).build();
+			TransactionOutput output = new DataTransactionOutput(this.network,
+					txTemplate, Coin.ZERO, script.getProgram());
+			txTemplate.addOutput(output);
+		}
+		
+		// derive address from reddemScript
+		String from = null;
+		Script redeem = null;
+		try {
+			redeem = new Script(Hex.decodeHex(redeemScript.toCharArray()));
+			from = createAddressFromRedeemScript(redeem);
+		} catch (DecoderException e1) {
+			e1.printStackTrace();
+		}
+		
+		// get unspentout from address
+		// Transaction input added
+		Output[] outputs = this.getUnspentOutputs(from);
+		injectOutputs(txTemplate, outputs, privateKeys, redeem, totalSpendValue + builder.getFee(),  from, ts);
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(bos);
+		oos.writeObject(ts);
+		byte [] SignatureList = bos.toByteArray();
+		
+		byte[] rawTx = txTemplate.bitcoinSerialize();
+		txByte.append(Utils.HEX.encode(rawTx));
+		return SignatureList;
+	}
+	public static final Comparator<HashMap<byte[], List<byte []>>> SIGNATURE_COMPARATOR = new Comparator<HashMap<byte[], List<byte []>>>() {
+        private Comparator<byte[]> comparator = UnsignedBytes.lexicographicalComparator();
+
+        @Override
+        public int compare(HashMap<byte[], List<byte []>> k1, HashMap<byte[], List<byte []>> k2) {
+            return comparator.compare(k1.keySet().iterator().next(), k2.keySet().iterator().next());
+        }
+    };
 }

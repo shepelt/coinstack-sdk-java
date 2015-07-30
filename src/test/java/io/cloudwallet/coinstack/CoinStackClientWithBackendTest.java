@@ -6,6 +6,7 @@ package io.cloudwallet.coinstack;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import io.cloudwallet.coinstack.backendadaptor.CoreBackEndAdaptor;
@@ -13,6 +14,7 @@ import io.cloudwallet.coinstack.model.CredentialsProvider;
 import io.cloudwallet.coinstack.model.Subscription;
 import io.cloudwallet.coinstack.model.Transaction;
 
+import org.bitcoinj.crypto.TransactionSignature;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -162,7 +164,7 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		String to = "3F3LvS6FbeeHRuW7cKF9pdnx5xKad4zjXh";
 		
 		//String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
-		long amount = CoinStackClient.convertToSatoshi("0.0003");
+		long amount = CoinStackClient.convertToSatoshi("0.0002");
 		long fee = CoinStackClient.convertToSatoshi("0.0001");
 		TransactionBuilder builder = new TransactionBuilder();
 		builder.addOutput(to, amount);
@@ -205,6 +207,34 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		String signedTx = coinStackClient.createMultiSigTransaction(builder, prikeys, redeemScript);
 		System.out.println(signedTx);
 		assertNotNull(signedTx);
+	//	coinStackClient.sendTransaction(signedTx);
+	}
+	
+	@Test
+	public void testPartialSignTransaction() throws Exception {
+		String privateKey3 = "5KF55BbKeZZqmAmpQAovn7KoBRjVdW4UN9uPGZoK1y9RrkPhnhA";
+		//String privateKey2 = "5Jd7kKaKRNkqALDzyY1nQgPBd5JmmPr3CTBFhQ3fsjcuRLqjjTg";
+		String privateKey1 = "5HqJ1GoR3qAjvCzRhWk9KQSD54F6PJ4buwv98vrDhrWEUhMKM5g";
+		String redeemScript = "52410421955a8ec650aed2748344810b5ab057d4b87244759914ad40086fb526cd487868b70fae9652eff933b28fcabfac44f282800fd10b241d989453ad35dcb2191241045e55d7adf05bb2d9e771904f3b4b0116c0bca34c226930a4a7ac16dc7c1946f5c538a4d9882833af4378ae0e43465173757f86cd2d59ba2193624ea6aa1ef7064104a95f8b9cfb3fdb970d56cd093a54e557083a3cfc2ac0d7bfb260abb69544c706e7b382429b9cf6919fd25449b5bdf0c6fcf4bda5576f88b742366f05cc8068e553ae";
+		String to = "1F444Loh6KzUQ8u8mAsz5upBtQ356vN95s";
+		long amount = CoinStackClient.convertToSatoshi("0.0001");
+		long fee = CoinStackClient.convertToSatoshi("0.0001");
+		
+		TransactionBuilder builder = new TransactionBuilder();
+		builder.addOutput(to, amount);
+		builder.setFee(fee);
+		
+		StringBuilder signedTx = new StringBuilder();
+		byte [] signatureList = coinStackClient.CreateMultiSigTransactionWithPartialSign(builder, privateKey1, redeemScript, signedTx);
+		System.out.println(signedTx);
+		System.out.println("sign 1 : " + signatureList);
+		
+		StringBuilder signedTx2 = new StringBuilder();
+		signatureList= coinStackClient.addSignatureToMultisig(signedTx.toString(), signatureList, privateKey3, redeemScript, signedTx2);
+		System.out.println(signedTx2);
+		System.out.println("sign 2 : " + signatureList);
+
+		assertNotNull(signedTx2);
 	//	coinStackClient.sendTransaction(signedTx);
 	}
 }
