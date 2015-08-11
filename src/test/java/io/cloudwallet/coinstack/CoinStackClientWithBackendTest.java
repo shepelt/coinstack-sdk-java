@@ -161,7 +161,7 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 	@Test
 	public void testBuildTransaction() throws Exception {
 		String privateKeyWIF = "5J82YdoYrtE3YGxjFW9Rr3R21qtDH9gFwkphHtnMpijcHs2PH7M";
-		String to = "3F3LvS6FbeeHRuW7cKF9pdnx5xKad4zjXh";
+		String to = "3EevY8SMDujvoqNJWV1XmshMD8UxXhJz1c";
 		
 		//String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
 		long amount = CoinStackClient.convertToSatoshi("0.0002");
@@ -187,10 +187,10 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 	
 	@Test
 	public void testMultiSigTransaction() throws Exception {
-		String privateKey1 = "5KF55BbKeZZqmAmpQAovn7KoBRjVdW4UN9uPGZoK1y9RrkPhnhA";
+		String privateKey1 = "5Jh46BhaJJeiW8C9tTz6ockGEgYnLYfrJmGnwYdcDpBbAvWvCbv";
 		//String privateKey2 = "5KF55BbKeZZqmAmpQAovn7KoBRjVdW4UN9uPGZoK1y9RrkPhnhA";
-		String privateKey3 = "5Jd7kKaKRNkqALDzyY1nQgPBd5JmmPr3CTBFhQ3fsjcuRLqjjTg";
-		String redeemScript = "52410421955a8ec650aed2748344810b5ab057d4b87244759914ad40086fb526cd487868b70fae9652eff933b28fcabfac44f282800fd10b241d989453ad35dcb2191241045e55d7adf05bb2d9e771904f3b4b0116c0bca34c226930a4a7ac16dc7c1946f5c538a4d9882833af4378ae0e43465173757f86cd2d59ba2193624ea6aa1ef7064104a95f8b9cfb3fdb970d56cd093a54e557083a3cfc2ac0d7bfb260abb69544c706e7b382429b9cf6919fd25449b5bdf0c6fcf4bda5576f88b742366f05cc8068e553ae";
+		String privateKey3 = "5JSad8KB82c3XW69e1hz8g1YFFts4GTdjHuWHkh4d4A8MZWw12N";
+		String redeemScript = "52410468806910b7a3589f40c09092d3a45c64f1ef950e23d4b5aa92ad4c3de7804ed95f0f50aca9ae928fb6e00223fad667693bf3e2b716dd6c9d474ad79f5b7a107e410494bae4aa9a4c2ca6103899098ca0867f62ca24af02fee2d6473a698d92fbc8c449aa2e236c0684ebb9e0fbb23d847d4624fd8ca4a1fdc940df432c6e312e18e84104cbc882d221f567005ea61aa45d5414f25371472f6ab5973e13a39a9edc26359b6980aa4f6f34cea62e82bbe13adc7fde9fc26bba2be2e7c5f8011a68bea39bae53ae";
 		List<String> prikeys = new ArrayList<String>();
 		prikeys.add(privateKey1);
 		prikeys.add(privateKey3);
@@ -198,7 +198,7 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		//String to = "1Ce8WxgwjarzLtV6zkUGgdwmAe5yjHoPXX";
 		String to = "1F444Loh6KzUQ8u8mAsz5upBtQ356vN95s";
 		//1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168
-		long amount = CoinStackClient.convertToSatoshi("0.0001");
+		long amount = CoinStackClient.convertToSatoshi("0.0039");
 		long fee = CoinStackClient.convertToSatoshi("0.0001");
 		TransactionBuilder builder = new TransactionBuilder();
 		builder.addOutput(to, amount);
@@ -212,10 +212,10 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 	
 	@Test
 	public void testPartialSignTransaction() throws Exception {
-		String privateKey3 = "5KF55BbKeZZqmAmpQAovn7KoBRjVdW4UN9uPGZoK1y9RrkPhnhA";
-		//String privateKey2 = "5Jd7kKaKRNkqALDzyY1nQgPBd5JmmPr3CTBFhQ3fsjcuRLqjjTg";
-		String privateKey1 = "5HqJ1GoR3qAjvCzRhWk9KQSD54F6PJ4buwv98vrDhrWEUhMKM5g";
-		String redeemScript = "52410421955a8ec650aed2748344810b5ab057d4b87244759914ad40086fb526cd487868b70fae9652eff933b28fcabfac44f282800fd10b241d989453ad35dcb2191241045e55d7adf05bb2d9e771904f3b4b0116c0bca34c226930a4a7ac16dc7c1946f5c538a4d9882833af4378ae0e43465173757f86cd2d59ba2193624ea6aa1ef7064104a95f8b9cfb3fdb970d56cd093a54e557083a3cfc2ac0d7bfb260abb69544c706e7b382429b9cf6919fd25449b5bdf0c6fcf4bda5576f88b742366f05cc8068e553ae";
+		String privateKey3 = "5JiqywVBWDphZbR2UWnUtj3yTX52LmGhnBy8gGED7GDdxzPuRaZ";
+		String privateKey2 = "5J4ZadEdMs3zaqTutP1eQoKnCGKSYrUgkPwBZrk3hNmFiz7B6Ke";
+		String privateKey1 = "5JKhaPecauUSKKZTJ2R8zhNZqFxLSDu3Q5dPU3ijSqkf2WGVekn";
+		String redeemScript = "524104162a5b6239e12d3d52f2c880555934525dbb014dae7165380f77dcbf58b121b8033f59a1f7a4dcea589fc4405ac756542dfa393d53f7a559038f59b8d1084de541046a8fca1041f6ecf55aaa4e431b6c4ee72b51492330e777f2967697eb633e277eabf5d6e2ab3132b218a2d03b013ac90a80a4a2b5a27d1fa2a78cccad64d43b6f4104e850211b270fe7c97335411fcb774f6c7af0a8dd2e3360ba577e0c2979c51a375f5c256e2c8701d1b9777c15b7fc8b42af435977fe338e4a4e19683c884ad0fd53ae";
 		String to = "1F444Loh6KzUQ8u8mAsz5upBtQ356vN95s";
 		long amount = CoinStackClient.convertToSatoshi("0.0001");
 		long fee = CoinStackClient.convertToSatoshi("0.0001");
@@ -224,17 +224,13 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		builder.addOutput(to, amount);
 		builder.setFee(fee);
 		
-		StringBuilder signedTx = new StringBuilder();
-		byte [] signatureList = coinStackClient.CreateMultiSigTransactionWithPartialSign(builder, privateKey1, redeemScript, signedTx);
+		String signedTx= coinStackClient.createMultiSigTransactionWithPartialSign(builder, privateKey3, redeemScript);
 		System.out.println(signedTx);
-		System.out.println("sign 1 : " + signatureList);
+		String partial = "0100000001a389a0739611ac73c2cf7348e27eba43fbcf8a54708320440ed0efed4d455ca701000000fd14010047304402205de2dbce96c8bc402e592e754343627ecbafb20cc49a5890f5197b2fe917a3610220623ae7678d851705bb8e2675a964e544895203ea58dbe23c6676d1c1c6a80faa014cc9524104162a5b6239e12d3d52f2c880555934525dbb014dae7165380f77dcbf58b121b8033f59a1f7a4dcea589fc4405ac756542dfa393d53f7a559038f59b8d1084de541046a8fca1041f6ecf55aaa4e431b6c4ee72b51492330e777f2967697eb633e277eabf5d6e2ab3132b218a2d03b013ac90a80a4a2b5a27d1fa2a78cccad64d43b6f4104e850211b270fe7c97335411fcb774f6c7af0a8dd2e3360ba577e0c2979c51a375f5c256e2c8701d1b9777c15b7fc8b42af435977fe338e4a4e19683c884ad0fd53aeffffffff0110270000000000001976a9149a258fac5c9f2b79de327e7622b0c1e5783508cb88ac00000000";
 		
-		StringBuilder signedTx2 = new StringBuilder();
-		signatureList= coinStackClient.addSignatureToMultisig(signedTx.toString(), signatureList, privateKey3, redeemScript, signedTx2);
-		System.out.println(signedTx2);
-		System.out.println("sign 2 : " + signatureList);
+		signedTx = coinStackClient.signMultiSigTransaction(partial, privateKey2, redeemScript);
+		System.out.println(signedTx);
 
-		assertNotNull(signedTx2);
-	//	coinStackClient.sendTransaction(signedTx);
+		assertNotNull(signedTx);
 	}
 }
