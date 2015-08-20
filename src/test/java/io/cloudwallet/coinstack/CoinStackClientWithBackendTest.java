@@ -160,11 +160,11 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 	
 	@Test
 	public void testBuildTransaction() throws Exception {
-		String privateKeyWIF = "5J82YdoYrtE3YGxjFW9Rr3R21qtDH9gFwkphHtnMpijcHs2PH7M";
+		String privateKeyWIF = "L1hqrraaPz46cbNc3uSmuzMKScrV9BzQKMeEXGifkNmiHw4Ek2mN";
 		String to = "3EevY8SMDujvoqNJWV1XmshMD8UxXhJz1c";
 		
 		//String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
-		long amount = CoinStackClient.convertToSatoshi("0.0002");
+		long amount = CoinStackClient.convertToSatoshi("0.0020");
 		long fee = CoinStackClient.convertToSatoshi("0.0001");
 		TransactionBuilder builder = new TransactionBuilder();
 		builder.addOutput(to, amount);
@@ -226,9 +226,9 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		
 		String signedTx= coinStackClient.createMultiSigTransactionWithPartialSign(builder, privateKey3, redeemScript);
 		System.out.println(signedTx);
-		String partial = "0100000001a389a0739611ac73c2cf7348e27eba43fbcf8a54708320440ed0efed4d455ca701000000fd14010047304402205de2dbce96c8bc402e592e754343627ecbafb20cc49a5890f5197b2fe917a3610220623ae7678d851705bb8e2675a964e544895203ea58dbe23c6676d1c1c6a80faa014cc9524104162a5b6239e12d3d52f2c880555934525dbb014dae7165380f77dcbf58b121b8033f59a1f7a4dcea589fc4405ac756542dfa393d53f7a559038f59b8d1084de541046a8fca1041f6ecf55aaa4e431b6c4ee72b51492330e777f2967697eb633e277eabf5d6e2ab3132b218a2d03b013ac90a80a4a2b5a27d1fa2a78cccad64d43b6f4104e850211b270fe7c97335411fcb774f6c7af0a8dd2e3360ba577e0c2979c51a375f5c256e2c8701d1b9777c15b7fc8b42af435977fe338e4a4e19683c884ad0fd53aeffffffff0110270000000000001976a9149a258fac5c9f2b79de327e7622b0c1e5783508cb88ac00000000";
+		//String partial = "0100000001a389a0739611ac73c2cf7348e27eba43fbcf8a54708320440ed0efed4d455ca701000000fd14010047304402205de2dbce96c8bc402e592e754343627ecbafb20cc49a5890f5197b2fe917a3610220623ae7678d851705bb8e2675a964e544895203ea58dbe23c6676d1c1c6a80faa014cc9524104162a5b6239e12d3d52f2c880555934525dbb014dae7165380f77dcbf58b121b8033f59a1f7a4dcea589fc4405ac756542dfa393d53f7a559038f59b8d1084de541046a8fca1041f6ecf55aaa4e431b6c4ee72b51492330e777f2967697eb633e277eabf5d6e2ab3132b218a2d03b013ac90a80a4a2b5a27d1fa2a78cccad64d43b6f4104e850211b270fe7c97335411fcb774f6c7af0a8dd2e3360ba577e0c2979c51a375f5c256e2c8701d1b9777c15b7fc8b42af435977fe338e4a4e19683c884ad0fd53aeffffffff0110270000000000001976a9149a258fac5c9f2b79de327e7622b0c1e5783508cb88ac00000000";
 		
-		signedTx = coinStackClient.signMultiSigTransaction(partial, privateKey2, redeemScript);
+		signedTx = coinStackClient.signMultiSigTransaction(signedTx, privateKey2, redeemScript);
 		System.out.println(signedTx);
 
 		assertNotNull(signedTx);
