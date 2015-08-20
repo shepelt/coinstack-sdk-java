@@ -32,12 +32,12 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 
 					@Override
 					public String getAccessKey() {
-						return "70a7758ddeafd9154ae13473963acd";
+						return "ff4a73aaaf6155ff9908d695e08006";
 					}
 
 					@Override
 					public String getSecretKey() {
-						return "6b88dcf7a6b4e09adc8f1095e594f9";
+						return "4167377810d03e3bc196c90f0ed9e5";
 					}
 
 				}, Endpoint.MAINNET));
