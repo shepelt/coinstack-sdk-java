@@ -24,6 +24,7 @@ import org.bitcoinj.core.ECKey.ECDSASignature;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -657,6 +658,51 @@ public class CoinStackClient {
 		} else {
 			return ecKey.getPrivateKeyEncoded(TestNet3Params.get()).toString();
 		}
+	}
+	
+	public static String signMessage(String privateKeyWIF, String messageText, boolean isMainNet) {
+		ECKey eckey = null;
+		String signature = null;
+		try {
+			if (isMainNet) {
+				eckey = new DumpedPrivateKey(MainNetParams.get(), privateKeyWIF).getKey();
+			} else {
+				eckey = new DumpedPrivateKey(TestNet3Params.get(), privateKeyWIF).getKey();
+			}
+			
+			signature = eckey.signMessage(messageText);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return signature;
+	}
+	
+	public static boolean verifyMessageSignature(String address, String messageText, String signature,boolean isMainNet) {
+		ECKey originalKey = null;
+		String derivedAddress = null;
+		try {
+			originalKey = ECKey.signedMessageToKey(messageText, signature);
+		} catch (SignatureException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (isMainNet) {
+			derivedAddress = originalKey.toAddress(MainNetParams.get()).toString();
+		} else {
+			derivedAddress = originalKey.toAddress(TestNet3Params.get()).toString();
+		}
+		
+		if( address.equals(derivedAddress))
+			return true;
+		else
+			return false;
+		
+	}
+	
+	public static String hashSha256(String message) {
+		Sha256Hash hash = Sha256Hash.create(message.getBytes());
+		return Utils.HEX.encode(hash.getBytes());
 	}
 
 	/**

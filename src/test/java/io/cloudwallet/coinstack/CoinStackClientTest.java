@@ -323,4 +323,28 @@ public class CoinStackClientTest {
 		System.out.println("redeem : " + redeemScript);
 	}
 	
+	@Test
+	public void testSignMessage() {
+		String privateKeyWIF = "Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd";
+		//String message = "this is a test";
+		//String signature = CoinStackClient.signMessage(privateKeyWIF, message, true);
+		//System.out.println("signature : " + signature);
+		//String address = CoinStackClient.deriveAddress(privateKeyWIF);
+		
+		 String signature = "H4uYYncnZ0wBSeZJ7BFsRVA76hwuOYAAJI5AfngS2Q+sjl7LDdLLCtwpVBCyq7J5+oS4jbvDP1o2fauqV163teQ=";
+	    String message = "Hello Bro";
+	    String address = "14hV8B8vQRDz6WPWkSe2FMimyr7qYJQBZ5";
+		boolean res = CoinStackClient.verifyMessageSignature(address, message, signature, true);
+		System.out.println("res : " + res);
+		assertTrue(res);
+	}
+	
+	@Test
+	public void tesHhashSha256() {
+		String message = "Hello Broefsfsfaeldlkdnvlkanlrinlndvln,kvf sfsfe ddd";
+		String hash = CoinStackClient.hashSha256(message);
+		System.out.println(hash);
+		assertNotNull(hash);
+	}
+	
 }
