@@ -52,6 +52,18 @@
 				</executions>
 
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.3</version>
+				<configuration>
+					<show>public</show>
+					<nohelp>true</nohelp>
+					<failOnError>false</failOnError>
+					<stylesheetfile>${basedir}/javadoc_stylesheet.css</stylesheetfile>
+					<excludePackageNames>io.cloudwallet.coinstack.backendadaptor:io.cloudwallet.coinstack.exception:io.cloudwallet.coinstack.model:io.cloudwallet.coinstack.util</excludePackageNames>
+				</configuration>
+			</plugin>
 		</plugins>
 		<resources>
 			<resource>

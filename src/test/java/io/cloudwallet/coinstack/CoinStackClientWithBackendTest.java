@@ -160,11 +160,11 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 	
 	@Test
 	public void testBuildTransaction() throws Exception {
-		String privateKeyWIF = "L1hqrraaPz46cbNc3uSmuzMKScrV9BzQKMeEXGifkNmiHw4Ek2mN";
-		String to = "3EevY8SMDujvoqNJWV1XmshMD8UxXhJz1c";
+		String privateKeyWIF = "5J82YdoYrtE3YGxjFW9Rr3R21qtDH9gFwkphHtnMpijcHs2PH7M";
+		String to = "357UeWvhR2xK9hUEdVnrxf1Kkbf6B1wLGT";
 		
 		//String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
-		long amount = CoinStackClient.convertToSatoshi("0.0020");
+		long amount = CoinStackClient.convertToSatoshi("0.0002");
 		long fee = CoinStackClient.convertToSatoshi("0.0001");
 		TransactionBuilder builder = new TransactionBuilder();
 		builder.addOutput(to, amount);

@@ -187,7 +187,7 @@ public class CoinStackClientTest {
 		assertTrue(transactions.length > 0);
 		long balance = coinStackClient
 				.getBalance("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6");
-		// Test 를 위해 그 누구도 권한이 없는 주소로 송금하였습니다. 혹시 잔고가 변경되면 연락해주세요.
+		// sended satoshi to the address which nobody has authority for testing
 		assertTrue(4580000000L <= balance);
 
 		// testing unspent outputs
@@ -341,7 +341,7 @@ public class CoinStackClientTest {
 	
 	@Test
 	public void tesHhashSha256() {
-		String message = "Hello Broefsfsfaeldlkdnvlkanlrinlndvln,kvf sfsfe ddd";
+		String message = "this is a test";
 		String hash = CoinStackClient.hashSha256(message);
 		System.out.println(hash);
 		assertNotNull(hash);
