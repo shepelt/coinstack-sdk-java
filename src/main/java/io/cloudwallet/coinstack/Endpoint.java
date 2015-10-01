@@ -22,7 +22,7 @@ public enum Endpoint {
 	TESTNET() {
 		@Override
 		public String endpoint() {
-			return "https://testnet.cloudwallet.io";
+			return "https://regtestnet.cloudwallet.io";
 		}
 
 		@Override

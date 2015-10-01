@@ -50,7 +50,7 @@ import org.bitcoinj.core.Wallet.DustySendRequested;
 import org.bitcoinj.core.Wallet.SendRequest;
 import org.bitcoinj.crypto.TransactionSignature;
 import org.bitcoinj.params.MainNetParams;
-import org.bitcoinj.params.TestNet3Params;
+import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptChunk;
@@ -67,6 +67,7 @@ public class CoinStackClient {
 	private AbstractCoinStackAdaptor coinStackAdaptor;
 	private static SecureRandom secureRandom = new SecureRandom();
 	private NetworkParameters network;
+	private boolean isMainNet;
 
 	/**
 	 * Creates a CoinStack client instance that connects to mainnet endpoint
@@ -93,7 +94,8 @@ public class CoinStackClient {
 		coinStackAdaptor.init();
 
 		this.network = endpoint.mainnet() ? MainNetParams.get()
-				: TestNet3Params.get();
+				: RegTestParams.get();
+		this.isMainNet = endpoint.mainnet();
 	}
 
 	/**
@@ -117,14 +119,16 @@ public class CoinStackClient {
 		coinStackAdaptor.init();
 
 		this.network = endpoint.mainnet() ? MainNetParams.get()
-				: TestNet3Params.get();
+				: RegTestParams.get();
+		this.isMainNet = endpoint.mainnet();
 	}
 
 	protected CoinStackClient(AbstractCoinStackAdaptor coinStackAdaptor) {
 		this.coinStackAdaptor = coinStackAdaptor;
 		coinStackAdaptor.init();
 		network = coinStackAdaptor.isMainnet() ? MainNetParams.get()
-				: TestNet3Params.get();
+				: RegTestParams.get();
+		this.isMainNet = coinStackAdaptor.isMainnet();
 	}
 
 	/**
@@ -269,7 +273,7 @@ public class CoinStackClient {
 		Wallet tempWallet = new Wallet(network);
 		tempWallet.allowSpendingUnconfirmedTransactions();
 		tempWallet.importKey(signingKey);
-		injectOutputs(tempWallet, outputs);
+		injectOutputs(tempWallet, outputs, isMainNet);
 		SendRequest request = SendRequest.to(destinationAddressParsed,
 				Coin.valueOf(amount));
 		request.changeAddress = fromAddress;
@@ -336,7 +340,7 @@ public class CoinStackClient {
 		Wallet tempWallet = new Wallet(network);
 		tempWallet.allowSpendingUnconfirmedTransactions();
 		tempWallet.importKey(signingKey);
-		injectOutputs(tempWallet, outputs);
+		injectOutputs(tempWallet, outputs, isMainNet);
 
 		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(
 				network);
@@ -426,7 +430,8 @@ public class CoinStackClient {
 		Wallet tempWallet = new Wallet(network);
 		tempWallet.allowSpendingUnconfirmedTransactions();
 		tempWallet.importKey(signingKey);
-		injectOutputs(tempWallet, outputs);
+		System.out.println("endPoint.mainnet() : " + isMainNet);
+		injectOutputs(tempWallet, outputs, isMainNet);
 
 		SendRequest request = SendRequest.forTx(txTemplate);
 		request.changeAddress = fromAddress;
@@ -461,7 +466,7 @@ public class CoinStackClient {
 	public static String getTransactionHash(String rawTransaction,
 			boolean isMainNet) {
 		return new org.bitcoinj.core.Transaction(
-				isMainNet ? MainNetParams.get() : TestNet3Params.get(),
+				isMainNet ? MainNetParams.get() : RegTestParams.get(),
 				org.bitcoinj.core.Utils.HEX.decode(rawTransaction))
 				.getHashAsString();
 	}
@@ -480,7 +485,7 @@ public class CoinStackClient {
 	public static Transaction parseRawTransaction(String rawTransaction,
 			boolean isMainNet) {
 		org.bitcoinj.core.Transaction tx = new org.bitcoinj.core.Transaction(
-				isMainNet ? MainNetParams.get() : TestNet3Params.get(),
+				isMainNet ? MainNetParams.get() : RegTestParams.get(),
 				org.bitcoinj.core.Utils.HEX.decode(rawTransaction));
 		tx.getInputs();
 		tx.getOutputs();
@@ -493,7 +498,7 @@ public class CoinStackClient {
 		Output[] outputs = new Output[tx.getOutputs().size()];
 		for (int i = 0; i < tx.getOutputs().size(); i++) {
 			outputs[i] = new Output(tx.getHashAsString(), i, tx.getOutput(i)
-					.getScriptPubKey().getToAddress(MainNetParams.get())
+					.getScriptPubKey().getToAddress(isMainNet ? MainNetParams.get() : RegTestParams.get())
 					.toString(), false, tx.getOutput(i).getValue().value,
 					Utils.HEX.encode(tx.getOutput(i).getScriptBytes()));
 		}
@@ -565,7 +570,9 @@ public class CoinStackClient {
         public int compare(TransactionSignature k1, TransactionSignature k2) {
         	ECKey ec1 = getECKeyFromSignature(k1.toCanonicalised(), sighash, redeem);
         	ECKey ec2 = getECKeyFromSignature(k2.toCanonicalised(), sighash, redeem);
-            return comparator.compare(ec1.getPubKey(), ec2.getPubKey());
+            return comparator.compare(
+            		ec1.getPubKey(), 
+            		ec2.getPubKey());
         }
     }
 	private static class TemporaryTransaction extends
@@ -585,7 +592,7 @@ public class CoinStackClient {
 		}
 	}
 
-	protected static void injectOutputs(Wallet wallet, Output[] outputs) {
+	protected static void injectOutputs(Wallet wallet, Output[] outputs, boolean isMainNet) {
 		// sort outputs with txid and output index
 		Arrays.sort(outputs, outputComparator);
 		TemporaryTransaction tx = null;
@@ -594,7 +601,7 @@ public class CoinStackClient {
 			Sha256Hash outputHash =  new Sha256Hash(
 					CoinStackClient.convertEndianness(output.getTransactionId()));
 			if (tx == null || !tx.getHash().equals(outputHash)) {
-				tx = new TemporaryTransaction(MainNetParams.get(), outputHash);
+				tx = new TemporaryTransaction(isMainNet? MainNetParams.get() : RegTestParams.get(), outputHash);
 				tx.getConfidence().setConfidenceType(
 						TransactionConfidence.ConfidenceType.BUILDING);
 				wallet.addWalletTransaction(new WalletTransaction(
@@ -603,11 +610,11 @@ public class CoinStackClient {
 
 			// fill hole between indexes with dummies
 			while (tx.getOutputs().size() < output.getIndex()) {
-				tx.addOutput(new TransactionOutput(MainNetParams.get(), tx,
+				tx.addOutput(new TransactionOutput(isMainNet ? MainNetParams.get() : RegTestParams.get(), tx,
 						Coin.NEGATIVE_SATOSHI, new byte[] {}));
 			}
 
-			tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin
+			tx.addOutput(new TransactionOutput(isMainNet ? MainNetParams.get() : RegTestParams.get(), tx, Coin
 					.valueOf(output.getValue()), org.bitcoinj.core.Utils.HEX
 					.decode(output.getScript())));
 		}
@@ -633,7 +640,7 @@ public class CoinStackClient {
 			throws MalformedInputException {
 		ECKey signingKey;
 		NetworkParameters network = isMainNet ? MainNetParams.get()
-				: TestNet3Params.get();
+				: RegTestParams.get();
 		try {
 			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {
@@ -641,7 +648,24 @@ public class CoinStackClient {
 		}
 		return signingKey.toAddress(network).toString();
 	}
-
+	
+	public static byte [] derivePubKey(String privateKeyWIF)
+			throws MalformedInputException {
+		return derivePubKey(privateKeyWIF, true);
+	}
+	
+	public static byte [] derivePubKey(String privateKeyWIF, boolean isMainNet)			
+			throws MalformedInputException {
+		ECKey signingKey;
+		NetworkParameters network = isMainNet ? MainNetParams.get()
+				: RegTestParams.get();
+		try {
+			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
+		} catch (AddressFormatException e) {
+			throw new MalformedInputException("Parsing private key failed");
+		}
+		return signingKey.getPubKey();
+	}
 	/**
 	 * Randomly generate a new private key
 	 * 
@@ -656,7 +680,7 @@ public class CoinStackClient {
 		if (isMainNet) {
 			return ecKey.getPrivateKeyEncoded(MainNetParams.get()).toString();
 		} else {
-			return ecKey.getPrivateKeyEncoded(TestNet3Params.get()).toString();
+			return ecKey.getPrivateKeyEncoded(RegTestParams.get()).toString();
 		}
 	}
 	
@@ -667,7 +691,7 @@ public class CoinStackClient {
 			if (isMainNet) {
 				eckey = new DumpedPrivateKey(MainNetParams.get(), privateKeyWIF).getKey();
 			} else {
-				eckey = new DumpedPrivateKey(TestNet3Params.get(), privateKeyWIF).getKey();
+				eckey = new DumpedPrivateKey(RegTestParams.get(), privateKeyWIF).getKey();
 			}
 			
 			signature = eckey.signMessage(messageText);
@@ -690,7 +714,7 @@ public class CoinStackClient {
 		if (isMainNet) {
 			derivedAddress = originalKey.toAddress(MainNetParams.get()).toString();
 		} else {
-			derivedAddress = originalKey.toAddress(TestNet3Params.get()).toString();
+			derivedAddress = originalKey.toAddress(RegTestParams.get()).toString();
 		}
 		
 		if( address.equals(derivedAddress))
@@ -728,7 +752,7 @@ public class CoinStackClient {
 			if (isMainNet) {
 				new Address(MainNetParams.get(), address);
 			} else {
-				new Address(TestNet3Params.get(), address);
+				new Address(RegTestParams.get(), address);
 			}
 			return true;
 		} catch (Exception e) {
@@ -774,6 +798,7 @@ public class CoinStackClient {
 	public String createRedeemScript(int threshold, List<byte[]> pubkeys) {
 		List<ECKey> eckeys = new ArrayList<ECKey>();
 		for(int i = 0 ; i < pubkeys.size(); i++) {
+			System.out.println();
 			eckeys.add(ECKey.fromPublicOnly(pubkeys.get(i)));			
 		}
 		Script sc = ScriptBuilder.createRedeemScript(threshold, eckeys);
@@ -793,8 +818,21 @@ public class CoinStackClient {
 	
 	public String createAddressFromRedeemScript(Script redeemScript) throws DecoderException {
 		Script sc = ScriptBuilder.createP2SHOutputScript(redeemScript);
-		Address address = Address.fromP2SHScript(MainNetParams.get(), sc);
+		Address address = Address.fromP2SHScript(isMainNet ? MainNetParams.get() : RegTestParams.get(), sc);
 		return address.toString();
+	}
+	
+	public String createAddressFromRedeemScript(String redeemScript) throws DecoderException {
+		Script redeem = null;
+		String from = null;
+		try {
+			redeem = new Script(Hex.decodeHex(redeemScript.toCharArray()));
+			from = createAddressFromRedeemScript(redeem);
+		} catch (DecoderException e1) {
+			e1.printStackTrace();
+		}
+		
+		return from.toString();
 	}
 	
 	public String createMultiSigTransaction(TransactionBuilder builder,
@@ -839,7 +877,6 @@ public class CoinStackClient {
 		} catch (DecoderException e1) {
 			e1.printStackTrace();
 		}
-
 		// get unspentout from address
 		// Transaction input added
 		Output[] outputs = this.getUnspentOutputs(from);
@@ -861,7 +898,7 @@ public class CoinStackClient {
 					CoinStackClient.convertEndianness(output.getTransactionId()));
 
 			if (tx == null || !tx.getHash().equals(outputHash)) {
-				tx = new TemporaryTransaction(MainNetParams.get(), outputHash);
+				tx = new TemporaryTransaction(isMainNet ? MainNetParams.get() : RegTestParams.get(), outputHash);
 				tx.getConfidence().setConfidenceType(
 						TransactionConfidence.ConfidenceType.BUILDING);
 			}
@@ -871,11 +908,11 @@ public class CoinStackClient {
 			
 			// fill hole between indexes with dummies
 			while (tx.getOutputs().size() < output.getIndex()) {
-				tx.addOutput(new TransactionOutput(MainNetParams.get(), tx,
+				tx.addOutput(new TransactionOutput(isMainNet ? MainNetParams.get() : RegTestParams.get(), tx,
 						Coin.NEGATIVE_SATOSHI, new byte[] {}));
 			}
 			
-			tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin
+			tx.addOutput(new TransactionOutput(isMainNet ? MainNetParams.get() : RegTestParams.get(), tx, Coin
 					.valueOf(output.getValue()), org.bitcoinj.core.Utils.HEX
 					.decode(output.getScript())));
 
@@ -939,7 +976,7 @@ public class CoinStackClient {
 					CoinStackClient.convertEndianness(output.getTransactionId()));
 
 			if (tx == null || !tx.getHash().equals(outputHash)) {
-				tx = new TemporaryTransaction(MainNetParams.get(), outputHash);
+				tx = new TemporaryTransaction(isMainNet ? MainNetParams.get() : RegTestParams.get(), outputHash);
 				tx.getConfidence().setConfidenceType(
 						TransactionConfidence.ConfidenceType.BUILDING);
 			}
@@ -949,11 +986,11 @@ public class CoinStackClient {
 			
 			// fill hole between indexes with dummies
 			while (tx.getOutputs().size() < output.getIndex()) {
-				tx.addOutput(new TransactionOutput(MainNetParams.get(), tx,
+				tx.addOutput(new TransactionOutput(isMainNet ? MainNetParams.get() : RegTestParams.get(), tx,
 						Coin.NEGATIVE_SATOSHI, new byte[] {}));
 			}
 			
-			tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin
+			tx.addOutput(new TransactionOutput(isMainNet ? MainNetParams.get() : RegTestParams.get(), tx, Coin
 					.valueOf(output.getValue()), org.bitcoinj.core.Utils.HEX
 					.decode(output.getScript())));
 
@@ -978,7 +1015,9 @@ public class CoinStackClient {
 		ECKey eckey = new DumpedPrivateKey(network, privateKey).getKey();
 		for(int i = 0 ; i < outputs.length ; i ++) {
 			Sha256Hash sighash = transaction.hashForSignature(i, redeemScript,SigHash.ALL, false);
+			System.out.println("sighash : " + sighash.toString());
 			ECKey.ECDSASignature mySignature = eckey.sign(sighash);
+			System.out.println("mySignature : " + Utils.HEX.encode(mySignature.encodeToDER()));
 			TransactionSignature signature = new TransactionSignature(mySignature, SigHash.ALL , false);
 			signatures.add(signature);
 			Script inputScript = ScriptBuilder.createP2SHMultiSigInputScript(signatures, redeemScript);
@@ -1014,7 +1053,9 @@ public class CoinStackClient {
 			TransactionSignature signature = new TransactionSignature(mySignature, SigHash.ALL , false);
 			tsList.add(signature);
 			SIGNATURE_COMPARATOR2 comparator = new SIGNATURE_COMPARATOR2(sighash, redeem);
-			Collections.sort(tsList, comparator);
+			Collections.sort(
+					tsList, 
+					comparator);
 			Script inputScript = ScriptBuilder.createP2SHMultiSigInputScript(tsList, redeem);
 			transaction.getInput(i).setScriptSig(inputScript);
 			tsList.clear();
@@ -1040,7 +1081,7 @@ public class CoinStackClient {
 		ECKey thisEc = null;
 		for(int i = 0 ; i < 4 ; i++) {
 			thisEc = ECKey.recoverFromSignature(i, ec, sighash, false);
-			
+			System.out.println("tt : " + Utils.HEX.encode(thisEc.getPubKey()));
 			if(thisEc != null ) {
 				if(isPubkey(thisEc, redeem)) return thisEc;
 
