@@ -430,7 +430,6 @@ public class CoinStackClient {
 		Wallet tempWallet = new Wallet(network);
 		tempWallet.allowSpendingUnconfirmedTransactions();
 		tempWallet.importKey(signingKey);
-		System.out.println("endPoint.mainnet() : " + isMainNet);
 		injectOutputs(tempWallet, outputs, isMainNet);
 
 		SendRequest request = SendRequest.forTx(txTemplate);
@@ -798,7 +797,6 @@ public class CoinStackClient {
 	public String createRedeemScript(int threshold, List<byte[]> pubkeys) {
 		List<ECKey> eckeys = new ArrayList<ECKey>();
 		for(int i = 0 ; i < pubkeys.size(); i++) {
-			System.out.println();
 			eckeys.add(ECKey.fromPublicOnly(pubkeys.get(i)));			
 		}
 		Script sc = ScriptBuilder.createRedeemScript(threshold, eckeys);
@@ -1015,9 +1013,7 @@ public class CoinStackClient {
 		ECKey eckey = new DumpedPrivateKey(network, privateKey).getKey();
 		for(int i = 0 ; i < outputs.length ; i ++) {
 			Sha256Hash sighash = transaction.hashForSignature(i, redeemScript,SigHash.ALL, false);
-			System.out.println("sighash : " + sighash.toString());
 			ECKey.ECDSASignature mySignature = eckey.sign(sighash);
-			System.out.println("mySignature : " + Utils.HEX.encode(mySignature.encodeToDER()));
 			TransactionSignature signature = new TransactionSignature(mySignature, SigHash.ALL , false);
 			signatures.add(signature);
 			Script inputScript = ScriptBuilder.createP2SHMultiSigInputScript(signatures, redeemScript);
@@ -1081,9 +1077,6 @@ public class CoinStackClient {
 		ECKey thisEc = null;
 		for(int i = 0 ; i < 4 ; i++) {
 			thisEc = ECKey.recoverFromSignature(i, ec, sighash, !isMainNet);
-			if(thisEc != null) 
-			System.out.println("tt : " + Utils.HEX.encode(thisEc.getPubKey()));
-			else System.out.println("mull");
 			if(thisEc != null ) {
 				if(isPubkey(thisEc, redeem)) return thisEc;
 
@@ -1096,7 +1089,6 @@ public class CoinStackClient {
 		List<ECKey> ecs = getECKeyFromRedeemScript(redeem);
 		
 		for(int i = 0 ; i < ecs.size() ; i++) {
-			System.out.println(new String(Hex.encodeHex(ecs.get(i).getPubKey())));
 			if(new String(Hex.encodeHex(ecs.get(i).getPubKey()))
 					.equals(new String(Hex.encodeHex(pubkey.getPubKey()))))
 				return true;
