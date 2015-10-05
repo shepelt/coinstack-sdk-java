@@ -1077,11 +1077,13 @@ public class CoinStackClient {
 		return tsList;
 	}
 	
-	private static ECKey getECKeyFromSignature(ECDSASignature ec,Sha256Hash sighash, Script redeem) {
+	private ECKey getECKeyFromSignature(ECDSASignature ec,Sha256Hash sighash, Script redeem) {
 		ECKey thisEc = null;
 		for(int i = 0 ; i < 4 ; i++) {
-			thisEc = ECKey.recoverFromSignature(i, ec, sighash, false);
+			thisEc = ECKey.recoverFromSignature(i, ec, sighash, !isMainNet);
+			if(thisEc != null) 
 			System.out.println("tt : " + Utils.HEX.encode(thisEc.getPubKey()));
+			else System.out.println("mull");
 			if(thisEc != null ) {
 				if(isPubkey(thisEc, redeem)) return thisEc;
 
@@ -1090,9 +1092,11 @@ public class CoinStackClient {
 		return thisEc;
 	}
 	
-	private static boolean isPubkey(ECKey pubkey, Script redeem) {
+	private boolean isPubkey(ECKey pubkey, Script redeem) {
 		List<ECKey> ecs = getECKeyFromRedeemScript(redeem);
+		
 		for(int i = 0 ; i < ecs.size() ; i++) {
+			System.out.println(new String(Hex.encodeHex(ecs.get(i).getPubKey())));
 			if(new String(Hex.encodeHex(ecs.get(i).getPubKey()))
 					.equals(new String(Hex.encodeHex(pubkey.getPubKey()))))
 				return true;
@@ -1101,7 +1105,7 @@ public class CoinStackClient {
 		
 	}
 	
-	private static List<ECKey> getECKeyFromRedeemScript(Script redeemScript) {
+	private List<ECKey> getECKeyFromRedeemScript(Script redeemScript) {
 		ArrayList<ECKey> result = new ArrayList<ECKey>();
 		List<ScriptChunk> chunks = redeemScript.getChunks();
         int numKeys = chunks.size() - 3;
