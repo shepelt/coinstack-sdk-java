@@ -262,7 +262,7 @@ public class CoinStackClientTest {
 						"45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e",
 						0, "", false, 4000l, "ffff") };
 		MockWallet wallet = new MockWallet(MainNetParams.get());
-		CoinStackClient.injectOutputs(wallet, outputBatch1);
+		CoinStackClient.injectOutputs(wallet, outputBatch1, true);
 
 		assertEquals(3, wallet.getTxMap().size());
 
@@ -280,7 +280,7 @@ public class CoinStackClientTest {
 						"45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e",
 						0, "", false, 4000l, "ffff") };
 		wallet = new MockWallet(MainNetParams.get());
-		CoinStackClient.injectOutputs(wallet, outputBatch2);
+		CoinStackClient.injectOutputs(wallet, outputBatch2, true);
 
 		assertEquals(3, wallet.getTxMap().size());
 		int nonDummyOutputCount = 0;

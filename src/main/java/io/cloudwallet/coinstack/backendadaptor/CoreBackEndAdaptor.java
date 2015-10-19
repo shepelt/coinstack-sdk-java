@@ -386,7 +386,6 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		}
 
 		String resJsonString = EntityUtils.toString(res.getEntity());
-		System.out.println(resJsonString);
 		EntityUtils.consume(res.getEntity());
 		JSONArray resJson;
 
