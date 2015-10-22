@@ -1,6 +1,7 @@
 package io.cloudwallet.coinstack.backendadaptor;
 
 import io.cloudwallet.coinstack.Endpoint;
+import io.cloudwallet.coinstack.exception.InvalidKeyException;
 import io.cloudwallet.coinstack.exception.TransactionRejectedException;
 import io.cloudwallet.coinstack.model.Block;
 import io.cloudwallet.coinstack.model.CredentialsProvider;
@@ -72,7 +73,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public String addSubscription(Subscription newSubscription)
-			throws IOException {
+			throws IOException, InvalidKeyException {
 		CloseableHttpResponse res = null;
 		try {
 			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
@@ -106,6 +107,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			throw new IOException("Failed to add subscription", e);
 		} catch (JSONException e) {
 			throw new IOException("Failed to marhsall subscription", e);
+		} catch (InvalidKeyException e1) {
+			throw new InvalidKeyException("InvalidKeyException");
 		} finally {
 			res.close();
 		}
@@ -408,7 +411,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public void sendTransaction(String rawTransaction) throws IOException,
-			TransactionRejectedException {
+			TransactionRejectedException, InvalidKeyException {
 		try {
 			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
 					+ "/transactions");
@@ -433,11 +436,13 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			}
 		} catch (JSONException e) {
 			throw new IOException("Failed to construct request", e);
+		} catch (InvalidKeyException e) {
+			throw new InvalidKeyException("InvalidKeyException");
 		}
 	}
 
 	private void signPostRequest(HttpPost req, byte[] content)
-			throws IOException {
+			throws IOException, InvalidKeyException {
 		try {
 			String md5 = calculateMD5(content);
 			req.addHeader(HMAC.CONTENT_MD5, md5);
@@ -448,6 +453,9 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			throw new IOException("Failed to sign request", e);
 		} catch (NoSuchAlgorithmException e) {
 			throw new IOException("Failed to sign request", e);
+		} catch (InvalidKeyException e) {
+			// TODO Auto-generated catch block
+			throw new InvalidKeyException("Failed to sign request");
 		}
 	}
 
@@ -466,6 +474,9 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 					HMAC.generateTimestamp());
 		} catch (HMACSigningException e) {
 			throw new IOException("Failed to sign request", e);
+		} catch (InvalidKeyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 

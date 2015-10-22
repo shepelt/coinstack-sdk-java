@@ -7,6 +7,7 @@ import io.cloudwallet.coinstack.backendadaptor.AbstractCoinStackAdaptor;
 import io.cloudwallet.coinstack.backendadaptor.CoreBackEndAdaptor;
 import io.cloudwallet.coinstack.exception.DustyTransactionException;
 import io.cloudwallet.coinstack.exception.InsufficientFundException;
+import io.cloudwallet.coinstack.exception.InvalidKeyException;
 import io.cloudwallet.coinstack.exception.MalformedInputException;
 import io.cloudwallet.coinstack.exception.TransactionRejectedException;
 import io.cloudwallet.coinstack.model.Block;
@@ -75,10 +76,13 @@ public class CoinStackClient {
 	 * and COINSTACK_SECRET_ACCESS_KEY
 	 */
 	public CoinStackClient() {
+		try {
 		this.coinStackAdaptor = new CoreBackEndAdaptor(
 				new EnvironmentVariableCredentialsProvider(), Endpoint.MAINNET);
 		coinStackAdaptor.init();
-
+		} catch (Exception e) {
+			e.getMessage();
+		}
 		this.network = MainNetParams.get();
 	};
 
@@ -518,9 +522,10 @@ public class CoinStackClient {
 	 * @throws TransactionRejectedException
 	 *             in case the transaction provided was rejected by blockchain
 	 *             network
+	 * @throws InvalidKeyException 
 	 */
 	public void sendTransaction(String rawTransaction) throws IOException,
-			TransactionRejectedException {
+			TransactionRejectedException, InvalidKeyException {
 		Endpoint.init();
 		coinStackAdaptor.sendTransaction(rawTransaction);
 	}
@@ -787,9 +792,10 @@ public class CoinStackClient {
 	 * @param newSubscription
 	 * @return
 	 * @throws IOException
+	 * @throws InvalidKeyException 
 	 */
 	public String addSubscription(Subscription newSubscription)
-			throws IOException {
+			throws IOException, InvalidKeyException {
 		Endpoint.init();
 		return coinStackAdaptor.addSubscription(newSubscription);
 	}
