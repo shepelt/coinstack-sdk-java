@@ -184,4 +184,10 @@ public class MockCoinStackAdaptor extends AbstractCoinStackAdaptor {
 		return true;
 	}
 
+	@Override
+	public String stampDocument(String hash) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

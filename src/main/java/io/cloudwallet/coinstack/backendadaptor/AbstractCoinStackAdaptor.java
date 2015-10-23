@@ -40,4 +40,6 @@ public abstract class AbstractCoinStackAdaptor {
 
 	public abstract String addSubscription(Subscription newSubscription) throws IOException, InvalidKeyException;
 
+	public abstract String stampDocument(String hash) throws IOException, InvalidKeyException;
+
 }

@@ -27,6 +27,7 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 
 	@Override
 	public void setUp() throws Exception {
+		
 		coinStackClient = new CoinStackClient(new CoreBackEndAdaptor(
 				new CredentialsProvider() {
 
@@ -40,7 +41,8 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 						return "4167377810d03e3bc196c90f0ed9e5";
 					}
 
-				}, Endpoint.MAINNET));
+				}, Endpoint.MAINNET)); 
+		//coinStackClient = new CoinStackClient();
 	}
 
 	@Test
@@ -175,7 +177,6 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		assertNotNull(signedTx);
 		
 		TransactionBuilder dataTx = new TransactionBuilder();
-		dataTx.addOutput(to, amount);
 		dataTx.setData("hello world".getBytes());
 		dataTx.setFee(fee);
 		
@@ -232,5 +233,12 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		System.out.println(signedTx);
 
 		assertNotNull(signedTx);
+	}
+	
+	@Test
+	public void testDocumentStamping() throws Exception {
+		String message = "Hello, world";
+		String stampid = coinStackClient.stampDocument(message);
+		assertNotNull(stampid);
 	}
 }

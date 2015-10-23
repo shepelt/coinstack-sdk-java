@@ -1159,4 +1159,17 @@ public class CoinStackClient {
 		byte[] rawTx = txTemplate.bitcoinSerialize();
 		return Utils.HEX.encode(rawTx);
 	}
+
+	public String stampDocument(String message) throws IOException {
+		String hash = CoinStackClient.hashSha256(message);
+		System.out.println(hash);
+		String stampid = null;
+		try {
+			stampid = coinStackAdaptor.stampDocument(hash);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return stampid;
+	}
 }

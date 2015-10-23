@@ -13,6 +13,7 @@ import io.cloudwallet.coinstack.util.HMAC;
 import io.cloudwallet.coinstack.util.PublicKeyVerifier;
 import io.cloudwallet.coinstack.util.HMAC.HMACSigningException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -22,6 +23,7 @@ import java.util.List;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.codec.binary.Hex;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -420,13 +422,13 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			byte[] payload = txRequest.toString().getBytes("UTF8");
 			httpPost.setEntity(new ByteArrayEntity(payload));
 			signPostRequest(httpPost, payload);
-			HttpResponse res = httpClient.execute(httpPost);
+			CloseableHttpResponse res = httpClient.execute(httpPost);
 			if (res.getStatusLine().getStatusCode() == 401) {
 				throw new IOException("Failed to authorize request");
 			}
 			StatusLine statusLine = res.getStatusLine();
 			int status = statusLine.getStatusCode();
-
+			res.close();
 			if (status == 409) {
 				throw new IOException("conflicting transaction",
 						new IOException(statusLine.toString()));
@@ -478,6 +480,59 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public String stampDocument(String hash) throws IOException, InvalidKeyException {
+		String txId;
+		System.out.println(hash);
+		try {
+			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
+					+ "/stamps");
+			System.out.println(this.endpoint.endpoint()
+					+ "/stamps");
+			JSONObject txRequest = new JSONObject();
+			txRequest.put("hash", hash);
+			byte[] payload = txRequest.toString().getBytes("UTF8");
+			System.out.println("JSONObject : " + txRequest.toString());
+			httpPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+			httpPost.setEntity(new ByteArrayEntity(payload));
+			signPostRequest(httpPost, payload);
+			for(int i = 0 ; i < httpPost.getAllHeaders().length ;i++) {
+				System.out.println("header : " + httpPost.getAllHeaders()[i]);
+			}
+			ByteArrayOutputStream ba = new ByteArrayOutputStream();
+			httpPost.getEntity().writeTo(ba);
+			System.out.println("body : " + ba.toString());
+			CloseableHttpResponse res = httpClient.execute(httpPost);
+			if (res.getStatusLine().getStatusCode() == 401) {
+				throw new IOException("Failed to authorize request");
+			}
+			
+			StatusLine statusLine = res.getStatusLine(); 
+			int status = statusLine.getStatusCode();
+			System.out.println(res.getStatusLine().getReasonPhrase());
+			res.getEntity().writeTo(ba);
+			System.out.println("body : " + ba.toString());
+			if (status == 400) {
+				throw new IOException("failed to stamp hash",
+						new IOException(statusLine.toString()));
+			} else if (status != 200) {
+				throw new IOException("failed to stamp hash",
+						new IOException(statusLine.toString()));
+			}
+			JSONObject resJson;
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			res.close();
+
+			resJson = new JSONObject(resJsonString);
+
+			txId = resJson.getString("stampid");
+			
+			} catch (JSONException e) {
+				throw new IOException("Failed to construct request", e);
+			}
+		return txId;
 	}
 
 }
