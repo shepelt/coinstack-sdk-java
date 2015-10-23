@@ -4,16 +4,9 @@
 package io.cloudwallet.coinstack;
 
 import static org.junit.Assert.assertEquals;
-
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import io.cloudwallet.coinstack.model.Block;
-import io.cloudwallet.coinstack.model.BlockchainStatus;
-import io.cloudwallet.coinstack.model.Output;
-import io.cloudwallet.coinstack.model.Transaction;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -21,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.ECKey;
@@ -29,11 +24,15 @@ import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.Wallet;
 import org.bitcoinj.params.MainNetParams;
-import org.bitcoinj.script.Script;
 import org.bitcoinj.wallet.WalletTransaction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import io.cloudwallet.coinstack.model.Block;
+import io.cloudwallet.coinstack.model.BlockchainStatus;
+import io.cloudwallet.coinstack.model.Output;
+import io.cloudwallet.coinstack.model.Transaction;
 
 /**
  * @author nepho

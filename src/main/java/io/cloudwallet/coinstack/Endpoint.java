@@ -10,8 +10,7 @@ public enum Endpoint {
 	MAINNET() {
 		@Override
 		public String endpoint() {
-			//return "https://mainnet.cloudwallet.io";
-			return "http://127.0.0.1:8080";
+			return "https://mainnet.cloudwallet.io";
 		}
 
 		@Override

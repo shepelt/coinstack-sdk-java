@@ -1,13 +1,12 @@
 package io.cloudwallet.coinstack.backendadaptor;
 
-import io.cloudwallet.coinstack.exception.InvalidKeyException;
+import java.io.IOException;
+
 import io.cloudwallet.coinstack.exception.TransactionRejectedException;
 import io.cloudwallet.coinstack.model.Block;
 import io.cloudwallet.coinstack.model.Output;
 import io.cloudwallet.coinstack.model.Subscription;
 import io.cloudwallet.coinstack.model.Transaction;
-
-import java.io.IOException;
 
 public abstract class AbstractCoinStackAdaptor {
 
@@ -32,14 +31,14 @@ public abstract class AbstractCoinStackAdaptor {
 
 	public abstract Output[] getUnspentOutputs(String address) throws IOException;
 
-	public abstract void sendTransaction(String rawTransaction) throws IOException, TransactionRejectedException, InvalidKeyException;
+	public abstract void sendTransaction(String rawTransaction) throws IOException, TransactionRejectedException;
 
 	public abstract Subscription[] listSubscriptions() throws IOException;
 
 	public abstract void deleteSubscription(String id) throws IOException;
 
-	public abstract String addSubscription(Subscription newSubscription) throws IOException, InvalidKeyException;
+	public abstract String addSubscription(Subscription newSubscription) throws IOException;
 
-	public abstract String stampDocument(String hash) throws IOException, InvalidKeyException;
+	public abstract String stampDocument(String hash) throws IOException;
 
 }

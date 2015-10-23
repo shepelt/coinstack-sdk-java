@@ -3,21 +3,20 @@
  */
 package io.cloudwallet.coinstack;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+
+import org.bitcoinj.core.Utils;
+import org.junit.Assert;
+import org.junit.Test;
 
 import io.cloudwallet.coinstack.backendadaptor.CoreBackEndAdaptor;
 import io.cloudwallet.coinstack.model.CredentialsProvider;
 import io.cloudwallet.coinstack.model.Subscription;
 import io.cloudwallet.coinstack.model.Transaction;
-
-import org.bitcoinj.core.Utils;
-import org.bitcoinj.crypto.TransactionSignature;
-import org.junit.Assert;
-import org.junit.Test;
 
 /**
  * 
