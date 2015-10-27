@@ -175,7 +175,7 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		String signedDataTx = coinStackClient.createSignedTransaction(dataTx, privateKeyWIF);
 		System.out.println(signedDataTx);
 		assertNotNull(signedDataTx);
-		coinStackClient.sendTransaction(signedTx);
+//		coinStackClient.sendTransaction(signedTx);
 	}
 
 	@Test
