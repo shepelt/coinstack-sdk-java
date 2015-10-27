@@ -2,13 +2,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>io.cloudwallet</groupId>
+	<groupId>io.blocko</groupId>
 	<artifactId>coinstack</artifactId>
-	<version>2.1.0-SNAPSHOT</version>
+	<version>3.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>coinstack</name>
-	<url>https://coinstack.cloudwallet.io</url>
+	<url>https://www.blocko.io</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -131,4 +131,9 @@
 			<version>2.7</version>
 		</dependency>
 	</dependencies>
+	<description>Java SDK for CoinStack Blockchain</description>
+	<organization>
+		<name>Blocko Inc.</name>
+		<url>https://www.blocko.io</url>
+	</organization>
 </project>
