@@ -107,16 +107,16 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 //			System.out.println(e.getCause());
 //			Assert.fail("sending tx failed");
 //		}
-
-		String failedTx = "0100000001279b60531d56b5403340edf41e5c866b005711c6f1c865476ea22bab4018008f010000006a473044022030677277e6e99e6dfe19df89411ebcc5d2fca4bd53a2873fac45b70be469034402203acb73750307258af3a4ca77a4d1ec0798415e1eeaa0df172bdbae1ee3555bc5012102e7185cfb5970912f40d0c24d0c1a15bc6ee03b129378852d59cfc278fe12b185ffffffff020000000000000000246a2253312cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b98244027c901000000001976a914c698f4239a60ff16b29a575405178eb12d3e04bf88ac00000000";
-		System.out.println(CoinStackClient.getTransactionHash(failedTx));
-		try {
-			 coinStackClient.sendTransaction(failedTx);
-		} catch (Exception e) {
-			System.out.println(e);
-			System.out.println(e.getCause());
-			Assert.fail("sending tx failed");
-		}
+//
+//		String failedTx = "0100000001279b60531d56b5403340edf41e5c866b005711c6f1c865476ea22bab4018008f010000006a473044022030677277e6e99e6dfe19df89411ebcc5d2fca4bd53a2873fac45b70be469034402203acb73750307258af3a4ca77a4d1ec0798415e1eeaa0df172bdbae1ee3555bc5012102e7185cfb5970912f40d0c24d0c1a15bc6ee03b129378852d59cfc278fe12b185ffffffff020000000000000000246a2253312cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b98244027c901000000001976a914c698f4239a60ff16b29a575405178eb12d3e04bf88ac00000000";
+//		System.out.println(CoinStackClient.getTransactionHash(failedTx));
+//		try {
+//			 coinStackClient.sendTransaction(failedTx);
+//		} catch (Exception e) {
+//			System.out.println(e);
+//			System.out.println(e.getCause());
+//			Assert.fail("sending tx failed");
+//		}
 	}
 
 	@Test

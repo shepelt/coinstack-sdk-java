@@ -9,6 +9,45 @@
 
 	<name>coinstack</name>
 	<url>https://www.blocko.io</url>
+	<description>Java SDK for CoinStack Blockchain</description>
+	<organization>
+		<name>Blocko Inc.</name>
+		<url>https://www.blocko.io</url>
+	</organization>
+
+	<licenses>
+		<license>
+			<name>MIT License</name>
+			<url>https://opensource.org/licenses/MIT</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<connection>scm:git:https://bitbucket.org/cloudwallet/coinstack-sdk-java</connection>
+		<developerConnection>scm:git:https://bitbucket.org/cloudwallet/coinstack-sdk-java</developerConnection>
+		<url>scm:git:https://bitbucket.org/cloudwallet/coinstack-sdk-java</url>
+	</scm>
+
+	<developers>
+		<developer>
+			<name>Blocko Inc.</name>
+			<email>dev@blocko.io</email>
+			<organization>Blocko Inc.</organization>
+			<organizationUrl>https://www.blocko.io</organizationUrl>
+		</developer>
+	</developers>
+
+	<distributionManagement>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -61,8 +100,46 @@
 					<nohelp>true</nohelp>
 					<failOnError>false</failOnError>
 					<stylesheetfile>${basedir}/javadoc_stylesheet.css</stylesheetfile>
-					<excludePackageNames>io.cloudwallet.coinstack.backendadaptor:io.cloudwallet.coinstack.exception:io.cloudwallet.coinstack.model:io.cloudwallet.coinstack.util</excludePackageNames>
+					<excludePackageNames>io.blocko.coinstack.backendadaptor:io.blocko.coinstack.exception:io.blocko.coinstack.model:io.blocko.coinstack.util</excludePackageNames>
 				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>package-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>oss.sonatype.org</serverId>
+					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					<description>${project.version}</description>
+				</configuration>
+				<executions>
+					<execution>
+						<id>deploy-to-sonatype</id>
+						<phase>deploy</phase>
+						<goals>
+							<goal>deploy</goal>
+							<goal>release</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 		<resources>
@@ -131,9 +208,55 @@
 			<version>2.7</version>
 		</dependency>
 	</dependencies>
-	<description>Java SDK for CoinStack Blockchain</description>
-	<organization>
-		<name>Blocko Inc.</name>
-		<url>https://www.blocko.io</url>
-	</organization>
+
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>1.5</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
