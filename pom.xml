@@ -3,7 +3,7 @@
 
 	<groupId>io.blocko</groupId>
 	<artifactId>coinstack</artifactId>
-	<version>3.0.8-SNAPSHOT</version>
+	<version>3.0.7-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>coinstack</name>
