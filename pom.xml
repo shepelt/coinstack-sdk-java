@@ -3,7 +3,7 @@
 
 	<groupId>io.blocko</groupId>
 	<artifactId>coinstack</artifactId>
-	<version>3.0.2-SNAPSHOT</version>
+	<version>3.0.7</version>
 	<packaging>jar</packaging>
 
 	<name>coinstack</name>
@@ -126,7 +126,7 @@
 				<version>1.6</version>
 				<extensions>true</extensions>
 				<configuration>
-					<serverId>oss.sonatype.org</serverId>
+					<serverId>ossrh</serverId>
 					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
 					<description>${project.version}</description>
 				</configuration>
