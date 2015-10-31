@@ -9,6 +9,8 @@ import static org.junit.Assert.assertNotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.codec.binary.Hex;
+import org.bitcoinj.core.Sha256Hash;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -237,11 +239,12 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		assertNotNull(signedTx);
 	}
 
-//	@Test
-//	public void testDocumentStamping() throws Exception {
-//		String message = "Hello, world";
-//		String stampid = coinStackClient.stampDocument(message.getBytes());
+	@Test
+	public void testDocumentStamping() throws Exception {
+		String message = "Hello, world";
+		Sha256Hash hash = Sha256Hash.create(message.getBytes());
+//		String stampid = coinStackClient.stampDocument(Hex.encodeHexString(hash.getBytes()));
 //		System.out.println(stampid);
 //		assertNotNull(stampid);
-//	}
+	}
 }

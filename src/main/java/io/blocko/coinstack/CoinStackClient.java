@@ -79,6 +79,7 @@ public class CoinStackClient {
 			return comparator.compare(ec1.getPubKey(), ec2.getPubKey());
 		}
 	}
+
 	private static class TemporaryTransaction extends org.bitcoinj.core.Transaction {
 		private static final long serialVersionUID = -6832934294927540476L;
 		private final Sha256Hash hash;
@@ -93,6 +94,7 @@ public class CoinStackClient {
 			return hash;
 		}
 	}
+
 	private static SecureRandom secureRandom = new SecureRandom();
 	private static Comparator<Output> outputComparator = new Comparator<Output>() {
 		public int compare(Output output1, Output output2) {
@@ -1029,9 +1031,18 @@ public class CoinStackClient {
 		return Utils.HEX.encode(rawTx);
 	}
 
-	public String stampDocument(byte[] document) throws IOException {
+	public String stampDocument(String documentHash) throws IOException, MalformedInputException {
 		Endpoint.init();
-		Sha256Hash hash = Sha256Hash.create(document);
-		return coinStackAdaptor.stampDocument(Utils.HEX.encode(hash.getBytes()));
+		byte[] hash = null;
+		try {
+			hash = Hex.decodeHex(documentHash.toCharArray());
+		} catch (DecoderException e) {
+			throw new MalformedInputException("invalid hash format");
+		}
+		if (hash.length != 32) {
+			throw new MalformedInputException("invalid hash format");
+		}
+		
+		return coinStackAdaptor.stampDocument(documentHash);
 	}
 }
