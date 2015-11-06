@@ -180,31 +180,31 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		assertEquals(subscriptionId, subscriptions[0].getId());
 	}
 
-	@Test
-	public void testBuildTransaction() throws Exception {
-		String privateKeyWIF = "5J82YdoYrtE3YGxjFW9Rr3R21qtDH9gFwkphHtnMpijcHs2PH7M";
-		String to = "357UeWvhR2xK9hUEdVnrxf1Kkbf6B1wLGT";
-
-		// String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
-		long amount = Math.convertToSatoshi("0.0002");
-		long fee = Math.convertToSatoshi("0.0001");
-		TransactionBuilder builder = new TransactionBuilder();
-		builder.addOutput(to, amount);
-		builder.setFee(fee);
-
-		String signedTx = coinStackClient.createSignedTransaction(builder, privateKeyWIF);
-		System.out.println(signedTx);
-		assertNotNull(signedTx);
-
-		TransactionBuilder dataTx = new TransactionBuilder();
-		dataTx.setData("hello world".getBytes());
-		dataTx.setFee(fee);
-
-		String signedDataTx = coinStackClient.createSignedTransaction(dataTx, privateKeyWIF);
-		System.out.println(signedDataTx);
-		assertNotNull(signedDataTx);
-		coinStackClient.sendTransaction(signedTx);
-	}
+//	@Test
+//	public void testBuildTransaction() throws Exception {
+//		String privateKeyWIF = "5J82YdoYrtE3YGxjFW9Rr3R21qtDH9gFwkphHtnMpijcHs2PH7M";
+//		String to = "357UeWvhR2xK9hUEdVnrxf1Kkbf6B1wLGT";
+//
+//		// String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
+//		long amount = Math.convertToSatoshi("0.0002");
+//		long fee = Math.convertToSatoshi("0.0001");
+//		TransactionBuilder builder = new TransactionBuilder();
+//		builder.addOutput(to, amount);
+//		builder.setFee(fee);
+//
+//		String signedTx = coinStackClient.createSignedTransaction(builder, privateKeyWIF);
+//		System.out.println(signedTx);
+//		assertNotNull(signedTx);
+//
+//		TransactionBuilder dataTx = new TransactionBuilder();
+//		dataTx.setData("hello world".getBytes());
+//		dataTx.setFee(fee);
+//
+//		String signedDataTx = coinStackClient.createSignedTransaction(dataTx, privateKeyWIF);
+//		System.out.println(signedDataTx);
+//		assertNotNull(signedDataTx);
+//		coinStackClient.sendTransaction(signedTx);
+//	}
 
 	@Test
 	public void testMultiSigTransaction() throws Exception {
