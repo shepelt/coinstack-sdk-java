@@ -11,11 +11,11 @@ import org.bitcoinj.params.RegTestParams;
 import io.blocko.coinstack.exception.MalformedInputException;
 
 public class ECDSA {
-	public static String signMessage(String privateKeyWIF, String messageText) {
+	public static String signMessage(String privateKeyWIF, String messageText) throws MalformedInputException {
 		return signMessage(privateKeyWIF, messageText, true);
 	}
 
-	public static String signMessage(String privateKeyWIF, String messageText, boolean isMainNet) {
+	public static String signMessage(String privateKeyWIF, String messageText, boolean isMainNet) throws MalformedInputException {
 		ECKey eckey = null;
 		String signature = null;
 
@@ -26,7 +26,7 @@ public class ECDSA {
 				eckey = new DumpedPrivateKey(RegTestParams.get(), privateKeyWIF).getKey();
 			}
 		} catch (AddressFormatException e) {
-			throw new MalformedInputException("Parsing private key failed");
+			throw new MalformedInputException("Invalid private key", "Parsing private key failed");
 		}
 
 		signature = eckey.signMessage(messageText);

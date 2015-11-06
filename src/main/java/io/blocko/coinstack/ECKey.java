@@ -82,7 +82,7 @@ public class ECKey {
 		try {
 			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {
-			throw new MalformedInputException("Parsing private key failed");
+			throw new MalformedInputException("Invalid private key", "Parsing private key failed");
 		}
 		return signingKey.toAddress(network).toString();
 	}
@@ -97,7 +97,7 @@ public class ECKey {
 		try {
 			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {
-			throw new MalformedInputException("Parsing private key failed");
+			throw new MalformedInputException("Invalid private key", "Parsing private key failed");
 		}
 		return signingKey.getPubKey();
 	}

@@ -32,15 +32,15 @@ public class MultiSig {
 		return address.toString();
 	}
 
-	public static String createAddressFromRedeemScript(String redeemScript, boolean isMainNet) {
+	public static String createAddressFromRedeemScript(String redeemScript, boolean isMainNet) throws MalformedInputException {
 		Script redeem = null;
 		String from = null;
 		try {
 			redeem = new Script(Hex.decodeHex(redeemScript.toCharArray()));
 		} catch (ScriptException e) {
-			throw new MalformedInputException("Malfored redeem script");
+			throw new MalformedInputException("Invalid redeem script", "Parsing redeem script failed");
 		} catch (DecoderException e) {
-			throw new MalformedInputException("Malfored redeem script");
+			throw new MalformedInputException("Invalid redeem script", "Parsing redeem script failed");
 		}
 		from = createAddressFromRedeemScript(redeem, isMainNet);
 		return from.toString();

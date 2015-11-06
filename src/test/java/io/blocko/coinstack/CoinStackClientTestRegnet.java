@@ -18,7 +18,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.DumpedPrivateKey;
-import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.core.TransactionOutput;
@@ -33,6 +32,7 @@ import org.junit.Test;
 import io.blocko.coinstack.CoinStackClient;
 import io.blocko.coinstack.Endpoint;
 import io.blocko.coinstack.backendadaptor.CoreBackEndAdaptor;
+import io.blocko.coinstack.exception.MalformedInputException;
 import io.blocko.coinstack.model.Block;
 import io.blocko.coinstack.model.BlockchainStatus;
 import io.blocko.coinstack.model.CredentialsProvider;
@@ -219,24 +219,24 @@ public class CoinStackClientTestRegnet {
 				outputs[0].getScript());
 
 		// test validating addesses
-		assertTrue(CoinStackClient
+		assertTrue(ECKey
 				.validateAddress("mhkCQhZyYAEoWyMTsgFTPhkd9o7tYm9PsH", false));
-		assertFalse(CoinStackClient
+		assertFalse(ECKey
 				.validateAddress("1A1zP1eP5QGefi2DMPTfssTL5SLmv7sisfN", false));
 
 		// create new private key and address
-		String newPrivateKeyWIF = CoinStackClient.createNewPrivateKey(false);
+		String newPrivateKeyWIF = ECKey.createNewPrivateKey(false);
 		assertNotNull(newPrivateKeyWIF);
-		String newAddress = CoinStackClient.deriveAddress(newPrivateKeyWIF, false);
+		String newAddress = ECKey.deriveAddress(newPrivateKeyWIF, false);
 		assertNotNull(newAddress);
 		System.out.println("newPrivateKeyWIF : " + newPrivateKeyWIF);
 		System.out.println("newAddress : " + newAddress);
-		assertTrue(CoinStackClient.validateAddress(newAddress, false));
+		assertTrue(ECKey.validateAddress(newAddress, false));
 	}
 
 	@Test
 	public void testConstructTemporaryWallet() throws Exception {
-		ECKey signingKey = new DumpedPrivateKey(MainNetParams.get(),
+		org.bitcoinj.core.ECKey signingKey = new DumpedPrivateKey(MainNetParams.get(),
 				"Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd")
 				.getKey();
 
@@ -336,34 +336,25 @@ public class CoinStackClientTestRegnet {
 		pubkeys.add(Hex.decodeHex(publickey2.toCharArray()));
 		pubkeys.add(Hex.decodeHex(publickey3.toCharArray()));
 		
-		String redeemScript = coinStackClient.createRedeemScript(2, pubkeys);
+		String redeemScript = MultiSig.createRedeemScript(2, pubkeys);
 		System.out.println("redeem : " + redeemScript);
 	}
 	
 	@Test
-	public void testSignMessage() {
+	public void testSignMessage() throws Exception {
 		String privateKeyWIF = "cVt6VWDXeRpeGuBo767ZAqiVw1yoEKTB5uytAoRNGZwebVZcYiyx";
 		String message = "this is a test";
-		String signature = CoinStackClient.signMessage(privateKeyWIF, message, false);
+		String signature = ECDSA.signMessage(privateKeyWIF, message, false);
 		System.out.println("signature : " + signature);
-		String address = CoinStackClient.deriveAddress(privateKeyWIF, false);
+		String address = ECKey.deriveAddress(privateKeyWIF, false);
 		
 	//	 String signature = "H4uYYncnZ0wBSeZJ7BFsRVA76hwuOYAAJI5AfngS2Q+sjl7LDdLLCtwpVBCyq7J5+oS4jbvDP1o2fauqV163teQ=";
 	//	5l06MIf2bbOI0Earrw5dwICYpIdgKDyJVDOYWYa4kH84O994bAk70ld1AU5KIINf0s4v1hJGJvpwjNcnm9P9GE8y0UMJTutg8izF7mJV6LeFvjesMRELK4Gdj7uyDHm0
 	//    String message = "Hello Bro";
 	//    String address = "14hV8B8vQRDz6WPWkSe2FMimyr7qYJQBZ5";
 		//		1FRevgdPHacyhi7FUxHQFC2qY9jm2iqLJr
-		boolean res = CoinStackClient.verifyMessageSignature(address, message, signature, false);
+		boolean res = ECDSA.verifyMessageSignature(address, message, signature, false);
 		System.out.println("res : " + res);
 		assertTrue(res);
 	}
-	
-	@Test
-	public void testHashSha256() {
-		String message = "this is a test";
-		String hash = CoinStackClient.hashSha256(message);
-		System.out.println(hash);
-		assertNotNull(hash);
-	}
-	
 }

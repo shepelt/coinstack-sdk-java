@@ -41,10 +41,11 @@ public class TransactionBuilder {
 	 * @param fee
 	 *            amount of fee to pay to miners (minimum 0.0001 BTC = 10000
 	 *            satoshi)
+	 * @throws MalformedInputException 
 	 */
-	public void setFee(long fee) {
+	public void setFee(long fee) throws MalformedInputException {
 		if (fee < 10000) {
-			throw new MalformedInputException("fee below minimum fee threshold");
+			throw new MalformedInputException("Invalid fee", "Fee amount below dust threshold");
 		}
 		this.fee = fee;
 	}
@@ -62,15 +63,16 @@ public class TransactionBuilder {
 	 * 
 	 * @param data
 	 *            80 bytes data payload to be attached to transaction
+	 * @throws MalformedInputException 
 	 * 
 	 */
-	public void setData(byte[] data) {
+	public void setData(byte[] data) throws MalformedInputException {
 		if (data.length > 80) {
-			throw new MalformedInputException("payload length over 80 bytes");
+			throw new MalformedInputException("Invalid data", "payload length over 80 bytes");
 		}
 
 		if (null != this.data) {
-			throw new MalformedInputException(
+			throw new MalformedInputException("Invalid data",
 					"multiple data payload not allowed");
 		}
 

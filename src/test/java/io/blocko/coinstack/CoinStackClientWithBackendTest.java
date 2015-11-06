@@ -18,6 +18,7 @@ import io.blocko.coinstack.CoinStackClient;
 import io.blocko.coinstack.Endpoint;
 import io.blocko.coinstack.TransactionBuilder;
 import io.blocko.coinstack.backendadaptor.CoreBackEndAdaptor;
+import io.blocko.coinstack.exception.CoinStackException;
 import io.blocko.coinstack.model.CredentialsProvider;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
@@ -52,13 +53,13 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 	public void testCreateTransaction() throws Exception {
 		String privateKeyWIF = "Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd";
 		String to = "1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168";
-		long amount = CoinStackClient.convertToSatoshi("0.0001");
-		long fee = CoinStackClient.convertToSatoshi("0.0001");
+		long amount = Math.convertToSatoshi("0.0001");
+		long fee = Math.convertToSatoshi("0.0001");
 		String rawTx = coinStackClient.createRawTransaction(privateKeyWIF, to, amount, fee);
 		assertNotNull(rawTx);
 		System.out.println(rawTx);
-		assertNotNull(CoinStackClient.getTransactionHash(rawTx));
-		System.out.println(CoinStackClient.getTransactionHash(rawTx));
+		assertNotNull(TransactionUtil.getTransactionHash(rawTx));
+		System.out.println(TransactionUtil.getTransactionHash(rawTx));
 
 		// try sending raw tx
 		try {
@@ -68,12 +69,14 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 			Assert.fail("sending tx failed");
 		}
 
+		// try sending double spending tx
 		boolean exceptionRaised = false;
 		try {
 			coinStackClient.sendTransaction(
 					"010000000124398225cf3d515a7ef7e816c37cbfd1cae9e01b401b90192c4dd479d23e7eab000000006b483045022100a8b331d506e265e79feb535a51dd5fbcd2724f0f6a1482cbea38d772ceae4e8c02206d7ee4bf2af3f8289310a09cc9760df6ae4768e24238cc13aee1739b837900ea012102ce3b0c53a06262e2a64e0639f2901447c2288ab437b5317fe05848e92a2ba25fffffffff0216120100000000001976a91415aad25727498a360e92eeb96db26f55fb38edcb88ac10270000000000001976a914abf0db3809c8ae1697f067a5c92171fd6ca3aaa988ac00000000");
-		} catch (Exception e) {
-			System.out.println(e);
+		} catch (CoinStackException e) {
+			System.out.println(e.getErrorType());
+			System.out.println(e.getMessage());
 			exceptionRaised = true;
 		}
 
@@ -81,11 +84,26 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 			Assert.fail("exception not raised");
 		}
 
-		Transaction tx = CoinStackClient.parseRawTransaction(
+		Transaction tx = TransactionUtil.parseRawTransaction(
 				"010000000124398225cf3d515a7ef7e816c37cbfd1cae9e01b401b90192c4dd479d23e7eab000000006b483045022100a8b331d506e265e79feb535a51dd5fbcd2724f0f6a1482cbea38d772ceae4e8c02206d7ee4bf2af3f8289310a09cc9760df6ae4768e24238cc13aee1739b837900ea012102ce3b0c53a06262e2a64e0639f2901447c2288ab437b5317fe05848e92a2ba25fffffffff0216120100000000001976a91415aad25727498a360e92eeb96db26f55fb38edcb88ac10270000000000001976a914abf0db3809c8ae1697f067a5c92171fd6ca3aaa988ac00000000");
 		assertNotNull(tx);
 		assertNotNull(tx.getOutputs()[0].getAddress());
 
+		
+		// try sending already spent tx
+		exceptionRaised = false;
+		try {
+			coinStackClient.sendTransaction(
+					"010000000124398225cf3d515a7ef7e816c37cbfd1cae9e01b401b90192c4dd479d23e7eab000000006b483045022100a8b331d506e265e79feb535a51dd5fbcd2724f0f6a1482cbea38d772ceae4e8c02206d7ee4bf2af3f8289310a09cc9760df6ae4768e24238cc13aee1739b837900ea012102ce3b0c53a06262e2a64e0639f2901447c2288ab437b5317fe05848e92a2ba25fffffffff0216120100000000001976a91415aad25727498a360e92eeb96db26f55fb38edcb88ac10270000000000001976a914abf0db3809c8ae1697f067a5c92171fd6ca3aaa988ac00000000");
+		} catch (CoinStackException e) {
+			System.out.println(e.getErrorType());
+			System.out.println(e.getMessage());
+			exceptionRaised = true;
+		}
+
+		if (!exceptionRaised) {
+			Assert.fail("exception not raised");
+		}
 	}
 
 	@Test
@@ -168,8 +186,8 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		String to = "357UeWvhR2xK9hUEdVnrxf1Kkbf6B1wLGT";
 
 		// String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
-		long amount = CoinStackClient.convertToSatoshi("0.0002");
-		long fee = CoinStackClient.convertToSatoshi("0.0001");
+		long amount = Math.convertToSatoshi("0.0002");
+		long fee = Math.convertToSatoshi("0.0001");
 		TransactionBuilder builder = new TransactionBuilder();
 		builder.addOutput(to, amount);
 		builder.setFee(fee);
@@ -202,8 +220,8 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		// String to = "1Ce8WxgwjarzLtV6zkUGgdwmAe5yjHoPXX";
 		String to = "1F444Loh6KzUQ8u8mAsz5upBtQ356vN95s";
 		// 1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168
-		long amount = CoinStackClient.convertToSatoshi("0.0039");
-		long fee = CoinStackClient.convertToSatoshi("0.0001");
+		long amount = Math.convertToSatoshi("0.0039");
+		long fee = Math.convertToSatoshi("0.0001");
 		TransactionBuilder builder = new TransactionBuilder();
 		builder.addOutput(to, amount);
 		builder.setFee(fee);
@@ -221,8 +239,8 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		String privateKey1 = "5JKhaPecauUSKKZTJ2R8zhNZqFxLSDu3Q5dPU3ijSqkf2WGVekn";
 		String redeemScript = "524104162a5b6239e12d3d52f2c880555934525dbb014dae7165380f77dcbf58b121b8033f59a1f7a4dcea589fc4405ac756542dfa393d53f7a559038f59b8d1084de541046a8fca1041f6ecf55aaa4e431b6c4ee72b51492330e777f2967697eb633e277eabf5d6e2ab3132b218a2d03b013ac90a80a4a2b5a27d1fa2a78cccad64d43b6f4104e850211b270fe7c97335411fcb774f6c7af0a8dd2e3360ba577e0c2979c51a375f5c256e2c8701d1b9777c15b7fc8b42af435977fe338e4a4e19683c884ad0fd53ae";
 		String to = "1F444Loh6KzUQ8u8mAsz5upBtQ356vN95s";
-		long amount = CoinStackClient.convertToSatoshi("0.0001");
-		long fee = CoinStackClient.convertToSatoshi("0.0001");
+		long amount = Math.convertToSatoshi("0.0001");
+		long fee = Math.convertToSatoshi("0.0001");
 
 		TransactionBuilder builder = new TransactionBuilder();
 		builder.addOutput(to, amount);

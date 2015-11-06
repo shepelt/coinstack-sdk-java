@@ -1,10 +1,9 @@
 /**
- * Copyright (c) CloudWallet Inc. and/or its affiliates. All rights reserved.
+ * Copyright (c) Blocko Inc. and/or its affiliates. All rights reserved.
  */
 package io.blocko.coinstack;
 
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,7 +15,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Coin;
-//import org.bitcoinj.core.Context;
 import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.ECKey.ECDSASignature;
@@ -43,15 +41,13 @@ import com.google.common.primitives.UnsignedBytes;
 
 import io.blocko.coinstack.backendadaptor.AbstractCoinStackAdaptor;
 import io.blocko.coinstack.backendadaptor.CoreBackEndAdaptor;
-import io.blocko.coinstack.exception.DustyTransactionException;
+import io.blocko.coinstack.exception.CoinStackException;
 import io.blocko.coinstack.exception.InsufficientFundException;
 import io.blocko.coinstack.exception.MalformedInputException;
-import io.blocko.coinstack.exception.TransactionRejectedException;
 import io.blocko.coinstack.model.Block;
 import io.blocko.coinstack.model.BlockchainStatus;
 import io.blocko.coinstack.model.CredentialsProvider;
 import io.blocko.coinstack.model.DataTransactionOutput;
-import io.blocko.coinstack.model.Input;
 import io.blocko.coinstack.model.Output;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
@@ -95,7 +91,6 @@ public class CoinStackClient {
 		}
 	}
 
-	private static SecureRandom secureRandom = new SecureRandom();
 	private static Comparator<Output> outputComparator = new Comparator<Output>() {
 		public int compare(Output output1, Output output2) {
 			int idCompare = output1.getTransactionId().compareTo(output2.getTransactionId());
@@ -116,84 +111,6 @@ public class CoinStackClient {
 		}
 		return result.toString();
 	};
-
-	/**
-	 * Convert human-readable bitcoin string (e.g. 0.0001 BTC) to satoshi unit
-	 * 
-	 * @param bitcoinAmount
-	 *            in human-friendly, string format (e.g. 0.0001 BTC)
-	 * @return bitcoin amount in satoshi
-	 */
-	@Deprecated
-	public static long convertToSatoshi(String bitcoinAmount) {
-		return Math.convertToSatoshi(bitcoinAmount);
-	}
-
-	/**
-	 * Randomly generate a new private key
-	 * 
-	 * @return a new private key in Wallet Import Format
-	 */
-	@Deprecated
-	public static String createNewPrivateKey() {
-		return io.blocko.coinstack.ECKey.createNewPrivateKey();
-	}
-
-	@Deprecated
-	public static String createNewPrivateKey(boolean isMainNet) {
-		return io.blocko.coinstack.ECKey.createNewPrivateKey(isMainNet);
-	}
-
-	/**
-	 * Get address associated with given private key
-	 * 
-	 * @param privateKeyWIF
-	 *            private key in Wallet Import Format
-	 * @return the address associated with the private key given
-	 * @throws MalformedInputException
-	 *             in case the private key is in incorrect format
-	 */
-	@Deprecated
-	public static String deriveAddress(String privateKeyWIF) throws MalformedInputException {
-		return io.blocko.coinstack.ECKey.deriveAddress(privateKeyWIF);
-	}
-
-	@Deprecated
-	public static String deriveAddress(String privateKeyWIF, boolean isMainNet) throws MalformedInputException {
-		return io.blocko.coinstack.ECKey.deriveAddress(privateKeyWIF, isMainNet);
-	}
-
-	@Deprecated
-	public static byte[] derivePubKey(String privateKeyWIF) throws MalformedInputException {
-		return io.blocko.coinstack.ECKey.derivePubKey(privateKeyWIF);
-	}
-
-	@Deprecated
-	public static byte[] derivePubKey(String privateKeyWIF, boolean isMainNet) throws MalformedInputException {
-		return io.blocko.coinstack.ECKey.derivePubKey(privateKeyWIF, isMainNet);
-	}
-
-	/**
-	 * Calculate transaction hash from raw transaction
-	 * 
-	 * @param rawTransaction
-	 *            transaction in hex-encoded string format
-	 * @return the hash (transaction ID) of given raw transaction
-	 */
-	public static String getTransactionHash(String rawTransaction) {
-		return getTransactionHash(rawTransaction, true);
-	}
-
-	public static String getTransactionHash(String rawTransaction, boolean isMainNet) {
-		return new org.bitcoinj.core.Transaction(isMainNet ? MainNetParams.get() : RegTestParams.get(),
-				org.bitcoinj.core.Utils.HEX.decode(rawTransaction)).getHashAsString();
-	}
-
-	@Deprecated
-	public static String hashSha256(String message) {
-		Sha256Hash hash = Sha256Hash.create(message.getBytes());
-		return Utils.HEX.encode(hash.getBytes());
-	}
 
 	protected static void injectOutputs(Wallet wallet, Output[] outputs, boolean isMainNet) {
 		// sort outputs with txid and output index
@@ -218,76 +135,6 @@ public class CoinStackClient {
 					Coin.valueOf(output.getValue()), org.bitcoinj.core.Utils.HEX.decode(output.getScript())));
 		}
 
-	}
-
-	/**
-	 * Construct a transaction object from raw transaction
-	 * 
-	 * @param rawTransaction
-	 *            transaction in hex-encoded string format
-	 * @return a transaction object representing the given raw transaction
-	 */
-	public static Transaction parseRawTransaction(String rawTransaction) {
-		return parseRawTransaction(rawTransaction, true);
-	}
-
-	public static Transaction parseRawTransaction(String rawTransaction, boolean isMainNet) {
-		org.bitcoinj.core.Transaction tx = new org.bitcoinj.core.Transaction(
-				isMainNet ? MainNetParams.get() : RegTestParams.get(),
-				org.bitcoinj.core.Utils.HEX.decode(rawTransaction));
-		tx.getInputs();
-		tx.getOutputs();
-		Input[] inputs = new Input[tx.getInputs().size()];
-		for (int i = 0; i < tx.getInputs().size(); i++) {
-			inputs[i] = new Input(i, null, tx.getInput(i).getParentTransaction().getHashAsString(), 0l);
-		}
-
-		Output[] outputs = new Output[tx.getOutputs().size()];
-		for (int i = 0; i < tx.getOutputs().size(); i++) {
-			outputs[i] = new Output(tx.getHashAsString(), i,
-					tx.getOutput(i).getScriptPubKey()
-							.getToAddress(isMainNet ? MainNetParams.get() : RegTestParams.get()).toString(),
-					false, tx.getOutput(i).getValue().value, Utils.HEX.encode(tx.getOutput(i).getScriptBytes()));
-		}
-
-		Transaction parsedTx = new Transaction(tx.getHashAsString(), new String[] {}, tx.getUpdateTime(), false, inputs,
-				outputs);
-		return parsedTx;
-	}
-
-	@Deprecated
-	public static String signMessage(String privateKeyWIF, String messageText, boolean isMainNet) {
-		return ECDSA.signMessage(privateKeyWIF, messageText, isMainNet);
-	}
-
-	/**
-	 * Validate a given address
-	 * 
-	 * @param address
-	 *            in string format
-	 * @return whether given address is a valid bitcoin address
-	 */
-	@Deprecated
-	public static boolean validateAddress(String address) {
-		return io.blocko.coinstack.ECKey.validateAddress(address, true);
-	}
-
-	/**
-	 * Validate a given address
-	 * 
-	 * @param address
-	 *            in string format
-	 * @return whether given address is a valid bitcoin address
-	 */
-	@Deprecated
-	public static boolean validateAddress(String address, boolean isMainNet) {
-		return io.blocko.coinstack.ECKey.validateAddress(address, isMainNet);
-	}
-
-	@Deprecated
-	public static boolean verifyMessageSignature(String address, String messageText, String signature,
-			boolean isMainNet) {
-		return ECDSA.verifyMessageSignature(address, messageText, signature, isMainNet);
 	}
 
 	private AbstractCoinStackAdaptor coinStackAdaptor;
@@ -363,8 +210,9 @@ public class CoinStackClient {
 	 * @param newSubscription
 	 * @return
 	 * @throws IOException
+	 * @throws CoinStackException 
 	 */
-	public String addSubscription(Subscription newSubscription) throws IOException {
+	public String addSubscription(Subscription newSubscription) throws IOException, CoinStackException {
 		Endpoint.init();
 		return coinStackAdaptor.addSubscription(newSubscription);
 	}
@@ -376,83 +224,8 @@ public class CoinStackClient {
 		coinStackAdaptor.fini();
 	}
 
-	@Deprecated
-	public String createAddressFromRedeemScript(String redeemScript) {
-		return MultiSig.createAddressFromRedeemScript(redeemScript, isMainNet);
-	}
-
-	/**
-	 * Construct a transaction for storing raw data and sign it using private
-	 * key
-	 * 
-	 * @param privateKeyWIF
-	 *            private key in Wallet Import Format to sign transaction with
-	 * @param payload
-	 *            80 byte data to embeded in transaction
-	 * @param fee
-	 *            amount of fee to pay to miners (minimum 0.0001 BTC = 10000
-	 *            satoshi)
-	 * @return transaction signed and ready to be broadcasted in hex-encoded
-	 *         string
-	 * @throws IOException
-	 *             in case of network failure
-	 * @throws InsufficientFundException
-	 *             in case there is not sufficient fund in private key provided
-	 * @throws DustyTransactionException
-	 *             in case the amount to transfer is too small to be handled by
-	 *             blockchain
-	 */
-	@Deprecated
-	public String createDataTransaction(String privateKeyWIF, long fee, byte[] payload)
-			throws IOException, InsufficientFundException, DustyTransactionException {
-		Endpoint.init();
-		// check sanity test for parameters
-		if (payload.length > 80) {
-			throw new MalformedInputException("payload length over 80 bytes");
-		}
-		// derive address from private key
-		final ECKey signingKey;
-		try {
-			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
-		} catch (AddressFormatException e) {
-			throw new MalformedInputException("Parsing private key failed");
-		}
-		Address fromAddress = signingKey.toAddress(network);
-		String from = fromAddress.toString();
-
-		// get unspentout from address
-		Output[] outputs = this.getUnspentOutputs(from);
-
-		Wallet tempWallet = new Wallet(network);
-		tempWallet.allowSpendingUnconfirmedTransactions();
-		tempWallet.importKey(signingKey);
-		injectOutputs(tempWallet, outputs, isMainNet);
-
-		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(network);
-		Script script = new ScriptBuilder().op(ScriptOpCodes.OP_RETURN).data(payload).build();
-		TransactionOutput output = new DataTransactionOutput(this.network, txTemplate, Coin.ZERO, script.getProgram());
-		txTemplate.addOutput(output);
-
-		SendRequest request = SendRequest.forTx(txTemplate);
-		request.changeAddress = fromAddress;
-		request.fee = Coin.valueOf(fee);
-		request.feePerKb = Coin.ZERO;
-
-		org.bitcoinj.core.Transaction tx;
-		try {
-			tx = tempWallet.sendCoinsOffline(request);
-		} catch (InsufficientMoneyException e) {
-			throw new InsufficientFundException("Insufficient fund");
-		} catch (DustySendRequested e) {
-			throw new DustyTransactionException("Send amount below dust threshold");
-		}
-		byte[] rawTx = tx.bitcoinSerialize();
-		// // convert to string encoded hex and return
-		return Utils.HEX.encode(rawTx);
-	}
-
 	public String createMultiSigTransaction(TransactionBuilder builder, List<String> privateKeys, String redeemScript)
-			throws IOException, InsufficientFundException, DustyTransactionException, AddressFormatException {
+			throws IOException, CoinStackException {
 		Endpoint.init();
 
 		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(network);
@@ -464,7 +237,7 @@ public class CoinStackClient {
 			try {
 				destinationAddressParsed = new Address(network, output.getAddress());
 			} catch (AddressFormatException e) {
-				throw new MalformedInputException("Malformed destination address");
+				throw new MalformedInputException("Invalid output", "Malformed address");
 			}
 			txTemplate.addOutput(Coin.valueOf(output.getValue()), destinationAddressParsed);
 			totalSpendValue += output.getValue();
@@ -490,7 +263,12 @@ public class CoinStackClient {
 		// get unspentout from address
 		// Transaction input added
 		Output[] outputs = this.getUnspentOutputs(from);
-		injectOutputs(txTemplate, outputs, privateKeys, redeem, totalSpendValue + builder.getFee(), from);
+		try {
+			injectOutputs(txTemplate, outputs, privateKeys, redeem, totalSpendValue + builder.getFee(), from);
+		} catch (AddressFormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		byte[] rawTx = txTemplate.bitcoinSerialize();
 		// // convert to string encoded hex and return
@@ -498,8 +276,7 @@ public class CoinStackClient {
 	}
 
 	public String createMultiSigTransactionWithPartialSign(TransactionBuilder builder, String privateKeys,
-			String redeemScript)
-					throws IOException, InsufficientFundException, DustyTransactionException, AddressFormatException {
+			String redeemScript) throws IOException, CoinStackException {
 		Endpoint.init();
 		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(network);
 
@@ -510,7 +287,7 @@ public class CoinStackClient {
 			try {
 				destinationAddressParsed = new Address(network, output.getAddress());
 			} catch (AddressFormatException e) {
-				throw new MalformedInputException("Malformed destination address");
+				throw new MalformedInputException("Invalid output", "Malformed address");
 			}
 			txTemplate.addOutput(Coin.valueOf(output.getValue()), destinationAddressParsed);
 			totalSpendValue += output.getValue();
@@ -537,84 +314,14 @@ public class CoinStackClient {
 		// get unspentout from address
 		// Transaction input added
 		Output[] outputs = this.getUnspentOutputs(from);
-		injectOutputs(txTemplate, outputs, privateKeys, redeem, totalSpendValue + builder.getFee(), from);
+		try {
+			injectOutputs(txTemplate, outputs, privateKeys, redeem, totalSpendValue + builder.getFee(), from);
+		} catch (AddressFormatException e) {
+			throw new MalformedInputException("Invalid output", "Malformed output address");
+		}
 
 		byte[] rawTx = txTemplate.bitcoinSerialize();
 		return Utils.HEX.encode(rawTx);
-	}
-
-	/**
-	 * Construct a transaction for sending bitcoin and sign it using private key
-	 * 
-	 * @param privateKeyWIF
-	 *            private key in Wallet Import Format to sign transactino with
-	 * @param destinationAddress
-	 *            address to send fund
-	 * @param amount
-	 *            amount of fund to transfer
-	 * @param fee
-	 *            amount of fee to pay to miners (minimum 0.0001 BTC = 10000
-	 *            satoshi)
-	 * @return transaction signed and ready to be broadcasted in hex-encoded
-	 *         string
-	 * @throws IOException
-	 *             in case of network failure
-	 * @throws InsufficientFundException
-	 *             in case there is not sufficient fund in private key provided
-	 * @throws DustyTransactionException
-	 *             in case the amount to transfer is too small to be handled by
-	 *             blockchain
-	 */
-	@Deprecated
-	public String createRawTransaction(String privateKeyWIF, String destinationAddress, long amount, long fee)
-			throws IOException, InsufficientFundException, DustyTransactionException {
-		Endpoint.init();
-		// check sanity test for parameters
-		Address destinationAddressParsed;
-		try {
-			destinationAddressParsed = new Address(network, destinationAddress);
-		} catch (AddressFormatException e) {
-			throw new MalformedInputException("Malformed destination address");
-		}
-
-		// derive address from private key
-		final ECKey signingKey;
-		try {
-			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
-		} catch (AddressFormatException e) {
-			throw new MalformedInputException("Parsing private key failed");
-		}
-		Address fromAddress = signingKey.toAddress(network);
-		String from = fromAddress.toString();
-
-		// get unspentout from address
-		Output[] outputs = this.getUnspentOutputs(from);
-
-		Wallet tempWallet = new Wallet(network);
-		tempWallet.allowSpendingUnconfirmedTransactions();
-		tempWallet.importKey(signingKey);
-		injectOutputs(tempWallet, outputs, isMainNet);
-		SendRequest request = SendRequest.to(destinationAddressParsed, Coin.valueOf(amount));
-		request.changeAddress = fromAddress;
-		request.fee = Coin.valueOf(fee);
-		request.feePerKb = Coin.ZERO;
-
-		org.bitcoinj.core.Transaction tx;
-		try {
-			tx = tempWallet.sendCoinsOffline(request);
-		} catch (InsufficientMoneyException e) {
-			throw new InsufficientFundException("Insufficient fund");
-		} catch (DustySendRequested e) {
-			throw new DustyTransactionException("Send amount below dust threshold");
-		}
-		byte[] rawTx = tx.bitcoinSerialize();
-		// // convert to string encoded hex and return
-		return Utils.HEX.encode(rawTx);
-	}
-
-	@Deprecated
-	public String createRedeemScript(int threshold, List<byte[]> pubkeys) {
-		return MultiSig.createRedeemScript(threshold, pubkeys);
 	}
 
 	/**
@@ -635,7 +342,7 @@ public class CoinStackClient {
 	 *             blockchain
 	 */
 	public String createSignedTransaction(TransactionBuilder builder, String privateKeyWIF)
-			throws IOException, InsufficientFundException, DustyTransactionException {
+			throws IOException, CoinStackException {
 		Endpoint.init();
 		// check sanity test for parameters
 		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(network);
@@ -644,7 +351,7 @@ public class CoinStackClient {
 			try {
 				destinationAddressParsed = new Address(network, output.getAddress());
 			} catch (AddressFormatException e) {
-				throw new MalformedInputException("Malformed destination address");
+				throw new MalformedInputException("Invalid output", "Malformed address");
 			}
 			txTemplate.addOutput(Coin.valueOf(output.getValue()), destinationAddressParsed);
 		}
@@ -662,7 +369,7 @@ public class CoinStackClient {
 		try {
 			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {
-			throw new MalformedInputException("Parsing private key failed");
+			throw new MalformedInputException("Invalid input", "Parsing private key failed");
 		}
 		Address fromAddress = signingKey.toAddress(network);
 		String from = fromAddress.toString();
@@ -685,7 +392,7 @@ public class CoinStackClient {
 		} catch (InsufficientMoneyException e) {
 			throw new InsufficientFundException("Insufficient fund");
 		} catch (DustySendRequested e) {
-			throw new DustyTransactionException("Send amount below dust threshold");
+			throw new MalformedInputException("Invalid output", "Send amount below dust threshold");
 		}
 		byte[] rawTx = tx.bitcoinSerialize();
 		// // convert to string encoded hex and return
@@ -697,8 +404,9 @@ public class CoinStackClient {
 	 * 
 	 * @param id
 	 * @throws IOException
+	 * @throws CoinStackException 
 	 */
-	public void deleteSubscription(String id) throws IOException {
+	public void deleteSubscription(String id) throws IOException, CoinStackException {
 		Endpoint.init();
 		coinStackAdaptor.deleteSubscription(id);
 	}
@@ -711,8 +419,9 @@ public class CoinStackClient {
 	 * @return balance in satoshi format (e.g. 0.0001 BTC = 10000 satoshi)
 	 * @throws IOException
 	 *             in case of network failure
+	 * @throws CoinStackException 
 	 */
-	public long getBalance(String address) throws IOException {
+	public long getBalance(String address) throws IOException, CoinStackException {
 		Endpoint.init();
 		return coinStackAdaptor.getBalance(address);
 	}
@@ -725,8 +434,9 @@ public class CoinStackClient {
 	 * @return block information and related transaction
 	 * @throws IOException
 	 *             in case of network failure
+	 * @throws CoinStackException 
 	 */
-	public Block getBlock(String blockId) throws IOException {
+	public Block getBlock(String blockId) throws IOException, CoinStackException {
 		Endpoint.init();
 		return coinStackAdaptor.getBlock(blockId);
 	}
@@ -737,8 +447,9 @@ public class CoinStackClient {
 	 * @return current status of Blockchain in BlockchainStatus object
 	 * @throws IOException
 	 *             in case of network failure
+	 * @throws CoinStackException 
 	 */
-	public BlockchainStatus getBlockchainStatus() throws IOException {
+	public BlockchainStatus getBlockchainStatus() throws IOException, CoinStackException {
 		Endpoint.init();
 		return new BlockchainStatus(coinStackAdaptor.getBestHeight(), coinStackAdaptor.getBestBlockHash());
 	}
@@ -765,16 +476,6 @@ public class CoinStackClient {
 		return thisEc;
 	}
 
-	// private Script createRedeemScriptToScript(int threshold, List<byte[]>
-	// pubkeys) {
-	// List<ECKey> eckeys = new ArrayList<ECKey>();
-	// for (int i = 0; i < pubkeys.size(); i++) {
-	// eckeys.add(ECKey.fromPublicOnly(pubkeys.get(i)));
-	// }
-	// Script sc = ScriptBuilder.createRedeemScript(threshold, eckeys);
-	// return sc;
-	// }
-
 	private List<TransactionSignature> getSignatures(org.bitcoinj.core.Transaction transaction, int index,
 			Script redeem) {
 		List<ScriptChunk> sc = transaction.getInput(index).getScriptSig().getChunks();
@@ -795,8 +496,9 @@ public class CoinStackClient {
 	 * @return transaction information, inputs, and outputs
 	 * @throws IOException
 	 *             in case of network failure
+	 * @throws CoinStackException 
 	 */
-	public Transaction getTransaction(String transactionId) throws IOException {
+	public Transaction getTransaction(String transactionId) throws IOException, CoinStackException {
 		Endpoint.init();
 		return coinStackAdaptor.getTransaction(transactionId);
 	}
@@ -809,8 +511,9 @@ public class CoinStackClient {
 	 * @return list of transaction IDs related to given address
 	 * @throws IOException
 	 *             in case of network failure
+	 * @throws CoinStackException 
 	 */
-	public String[] getTransactions(String address) throws IOException {
+	public String[] getTransactions(String address) throws IOException, CoinStackException {
 		Endpoint.init();
 		return coinStackAdaptor.getTransactions(address);
 	}
@@ -823,14 +526,16 @@ public class CoinStackClient {
 	 * @return list of unspent transaction outputs
 	 * @throws IOException
 	 *             in case of network failure
+	 * @throws CoinStackException 
 	 */
-	public Output[] getUnspentOutputs(String address) throws IOException {
+	public Output[] getUnspentOutputs(String address) throws IOException, CoinStackException {
 		Endpoint.init();
 		return coinStackAdaptor.getUnspentOutputs(address);
 	}
 
 	protected long injectOutputs(org.bitcoinj.core.Transaction transaction, Output[] outputs, List<String> privateKeys,
-			Script redeemScript, long restFee, String from) throws IOException, AddressFormatException {
+			Script redeemScript, long restFee, String from)
+					throws IOException, AddressFormatException, InsufficientFundException, MalformedInputException {
 		long totalValue = 0;
 		Arrays.sort(outputs, outputComparator);
 		org.bitcoinj.core.Transaction tx = null;
@@ -866,8 +571,7 @@ public class CoinStackClient {
 			try {
 				transaction.addOutput(Coin.valueOf(rest), new Address(network, from));
 			} catch (AddressFormatException e) {
-
-				e.printStackTrace();
+				throw new MalformedInputException("Invalid output", "Malformed output address");
 			}
 		}
 		List<TransactionSignature> signatures = new ArrayList<TransactionSignature>();
@@ -902,7 +606,8 @@ public class CoinStackClient {
 	}
 
 	protected long injectOutputs(org.bitcoinj.core.Transaction transaction, Output[] outputs, String privateKey,
-			Script redeemScript, long restFee, String from) throws IOException, AddressFormatException {
+			Script redeemScript, long restFee, String from)
+					throws IOException, AddressFormatException, InsufficientFundException {
 		long totalValue = 0;
 		Arrays.sort(outputs, outputComparator);
 		org.bitcoinj.core.Transaction tx = null;
@@ -935,12 +640,7 @@ public class CoinStackClient {
 		}
 
 		if (rest > 0) {
-			try {
-				transaction.addOutput(Coin.valueOf(rest), new Address(network, from));
-			} catch (AddressFormatException e) {
-
-				e.printStackTrace();
-			}
+			transaction.addOutput(Coin.valueOf(rest), new Address(network, from));
 		}
 		List<TransactionSignature> signatures = new ArrayList<TransactionSignature>();
 		ECKey eckey = new DumpedPrivateKey(network, privateKey).getKey();
@@ -973,8 +673,9 @@ public class CoinStackClient {
 	 * 
 	 * @return
 	 * @throws IOException
+	 * @throws CoinStackException 
 	 */
-	public Subscription[] listSubscriptions() throws IOException {
+	public Subscription[] listSubscriptions() throws IOException, CoinStackException {
 		Endpoint.init();
 		return coinStackAdaptor.listSubscriptions();
 	}
@@ -991,13 +692,13 @@ public class CoinStackClient {
 	 *             in case the transaction provided was rejected by blockchain
 	 *             network
 	 */
-	public void sendTransaction(String rawTransaction) throws IOException, TransactionRejectedException {
+	public void sendTransaction(String rawTransaction) throws IOException, CoinStackException {
 		Endpoint.init();
 		coinStackAdaptor.sendTransaction(rawTransaction);
 	}
 
 	public String signMultiSigTransaction(String transactionSerialized, String myPrivateKey, String redeemScript)
-			throws IOException {
+			throws IOException, CoinStackException {
 
 		org.bitcoinj.core.Transaction transaction = new org.bitcoinj.core.Transaction(network,
 				org.bitcoinj.core.Utils.HEX.decode(transactionSerialized));
@@ -1006,11 +707,13 @@ public class CoinStackClient {
 		ECKey eckey = null;
 		try {
 			redeem = new Script(Hex.decodeHex(redeemScript.toCharArray()));
+		} catch (DecoderException e) {
+			throw new MalformedInputException("Invalid redeem script", "failed to decode redeem script");
+		}
+		try {
 			eckey = new DumpedPrivateKey(network, myPrivateKey).getKey();
-		} catch (DecoderException e1) {
-			e1.printStackTrace();
 		} catch (AddressFormatException e) {
-			e.printStackTrace();
+			throw new MalformedInputException("Invalid private key", "Parsing private key failed");
 		}
 
 		for (int i = 0; i < transaction.getInputs().size(); i++) {
@@ -1031,18 +734,157 @@ public class CoinStackClient {
 		return Utils.HEX.encode(rawTx);
 	}
 
-	public String stampDocument(String documentHash) throws IOException, MalformedInputException {
+	public String stampDocument(String documentHash) throws IOException, CoinStackException {
 		Endpoint.init();
 		byte[] hash = null;
 		try {
 			hash = Hex.decodeHex(documentHash.toCharArray());
 		} catch (DecoderException e) {
-			throw new MalformedInputException("invalid hash format");
+			throw new MalformedInputException("Invalid input", "Invaild hash format - needs to be hex encoded");
 		}
 		if (hash.length != 32) {
-			throw new MalformedInputException("invalid hash format");
+			throw new MalformedInputException("Invalid input", "Invaild hash format - needs to be hex encoded");
 		}
-		
+
 		return coinStackAdaptor.stampDocument(documentHash);
+	}
+	
+	/**
+	 * Construct a transaction for storing raw data and sign it using private
+	 * key
+	 * 
+	 * @param privateKeyWIF
+	 *            private key in Wallet Import Format to sign transaction with
+	 * @param payload
+	 *            80 byte data to embeded in transaction
+	 * @param fee
+	 *            amount of fee to pay to miners (minimum 0.0001 BTC = 10000
+	 *            satoshi)
+	 * @return transaction signed and ready to be broadcasted in hex-encoded
+	 *         string
+	 * @throws IOException
+	 *             in case of network failure
+	 * @throws InsufficientFundException
+	 *             in case there is not sufficient fund in private key provided
+	 * @throws DustyTransactionException
+	 *             in case the amount to transfer is too small to be handled by
+	 *             blockchain
+	 */
+	@Deprecated
+	public String createDataTransaction(String privateKeyWIF, long fee, byte[] payload)
+			throws IOException, CoinStackException {
+		Endpoint.init();
+		// check sanity test for parameters
+		if (payload.length > 80) {
+			throw new MalformedInputException("Invalid data", "payload length over 80 bytes");
+		}
+		// derive address from private key
+		final ECKey signingKey;
+		try {
+			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
+		} catch (AddressFormatException e) {
+			throw new MalformedInputException("Invalid private key", "Malformed private key");
+		}
+		Address fromAddress = signingKey.toAddress(network);
+		String from = fromAddress.toString();
+
+		// get unspentout from address
+		Output[] outputs = this.getUnspentOutputs(from);
+
+		Wallet tempWallet = new Wallet(network);
+		tempWallet.allowSpendingUnconfirmedTransactions();
+		tempWallet.importKey(signingKey);
+		injectOutputs(tempWallet, outputs, isMainNet);
+
+		org.bitcoinj.core.Transaction txTemplate = new org.bitcoinj.core.Transaction(network);
+		Script script = new ScriptBuilder().op(ScriptOpCodes.OP_RETURN).data(payload).build();
+		TransactionOutput output = new DataTransactionOutput(this.network, txTemplate, Coin.ZERO, script.getProgram());
+		txTemplate.addOutput(output);
+
+		SendRequest request = SendRequest.forTx(txTemplate);
+		request.changeAddress = fromAddress;
+		request.fee = Coin.valueOf(fee);
+		request.feePerKb = Coin.ZERO;
+
+		org.bitcoinj.core.Transaction tx;
+		try {
+			tx = tempWallet.sendCoinsOffline(request);
+		} catch (InsufficientMoneyException e) {
+			throw new InsufficientFundException("Insufficient fund");
+		} catch (DustySendRequested e) {
+			throw new MalformedInputException("Invalid output", "Send amount below dust threshold");
+		}
+		byte[] rawTx = tx.bitcoinSerialize();
+		// // convert to string encoded hex and return
+		return Utils.HEX.encode(rawTx);
+	}
+
+	/**
+	 * Construct a transaction for sending bitcoin and sign it using private key
+	 * 
+	 * @param privateKeyWIF
+	 *            private key in Wallet Import Format to sign transactino with
+	 * @param destinationAddress
+	 *            address to send fund
+	 * @param amount
+	 *            amount of fund to transfer
+	 * @param fee
+	 *            amount of fee to pay to miners (minimum 0.0001 BTC = 10000
+	 *            satoshi)
+	 * @return transaction signed and ready to be broadcasted in hex-encoded
+	 *         string
+	 * @throws IOException
+	 *             in case of network failure
+	 * @throws InsufficientFundException
+	 *             in case there is not sufficient fund in private key provided
+	 * @throws DustyTransactionException
+	 *             in case the amount to transfer is too small to be handled by
+	 *             blockchain
+	 */
+	@Deprecated
+	public String createRawTransaction(String privateKeyWIF, String destinationAddress, long amount, long fee)
+			throws IOException, CoinStackException {
+		Endpoint.init();
+		// check sanity test for parameters
+		Address destinationAddressParsed;
+		try {
+			destinationAddressParsed = new Address(network, destinationAddress);
+		} catch (AddressFormatException e) {
+			throw new MalformedInputException("Invalid destination address", "Malformed address");
+		}
+
+		// derive address from private key
+		final ECKey signingKey;
+		try {
+			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
+		} catch (AddressFormatException e) {
+			throw new MalformedInputException("Invalid private key", "Malformed private key");
+		}
+		Address fromAddress = signingKey.toAddress(network);
+		String from = fromAddress.toString();
+
+		// get unspentout from address
+		Output[] outputs = this.getUnspentOutputs(from);
+
+		Wallet tempWallet = new Wallet(network);
+		tempWallet.allowSpendingUnconfirmedTransactions();
+		tempWallet.importKey(signingKey);
+		injectOutputs(tempWallet, outputs, isMainNet);
+		SendRequest request = SendRequest.to(destinationAddressParsed, Coin.valueOf(amount));
+		request.changeAddress = fromAddress;
+		request.fee = Coin.valueOf(fee);
+		request.feePerKb = Coin.ZERO;
+
+		org.bitcoinj.core.Transaction tx;
+		try {
+			tx = tempWallet.sendCoinsOffline(request);
+		} catch (InsufficientMoneyException e) {
+			throw new InsufficientFundException("Insufficient fund");
+		} catch (DustySendRequested e) {
+			throw new MalformedInputException("Invalid output", "Send amount below dust threshold");
+		}
+		byte[] rawTx = tx.bitcoinSerialize();
+		// // convert to string encoded hex and return
+		return Utils.HEX.encode(rawTx);
 	}
 }

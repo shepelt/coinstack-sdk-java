@@ -10,7 +10,6 @@ import javax.net.ssl.SSLContext;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpHeaders;
-import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -34,7 +33,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import io.blocko.coinstack.Endpoint;
-import io.blocko.coinstack.exception.TransactionRejectedException;
+import io.blocko.coinstack.exception.AuthSignException;
+import io.blocko.coinstack.exception.CoinStackException;
+import io.blocko.coinstack.exception.InvalidResponseException;
+import io.blocko.coinstack.exception.MalformedInputException;
 import io.blocko.coinstack.model.Block;
 import io.blocko.coinstack.model.CredentialsProvider;
 import io.blocko.coinstack.model.Input;
@@ -42,8 +44,8 @@ import io.blocko.coinstack.model.Output;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
 import io.blocko.coinstack.util.HMAC;
-import io.blocko.coinstack.util.PublicKeyVerifier;
 import io.blocko.coinstack.util.HMAC.HMACSigningException;
+import io.blocko.coinstack.util.PublicKeyVerifier;
 
 public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	private static final String[] defaultProtocols = new String[] { "TLSv1" };
@@ -69,74 +71,83 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		this.cipherSuites = cipherSuites;
 	}
 
+	private CoinStackException processError(String resJsonString, int status) throws InvalidResponseException {
+		JSONObject resJson = null;
+		try {
+			resJson = new JSONObject(resJsonString);
+		} catch (JSONException e) {
+			throw new InvalidResponseException("Invalid server response", "failed to parse error information");
+		}
+
+		CoinStackException exception;
+		try {
+			String cause = "";
+			if (resJson.has("error_cause")) {
+				cause = resJson.getString("error_cause");
+			}
+			exception = new CoinStackException(resJson.getString("error_type"), resJson.getInt("error_code"), status,
+					resJson.getString("error_message"), resJson.getBoolean("retry"), cause);
+		} catch (JSONException e) {
+			throw new InvalidResponseException("Invalid server response", "failed to parse error information");
+		}
+		return exception;
+	}
+
 	@Override
-	public String addSubscription(Subscription newSubscription) throws IOException {
+	public String addSubscription(Subscription newSubscription) throws IOException, CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
 			HttpPost httpPost = new HttpPost(this.endpoint.endpoint() + "/subscriptions");
-			byte[] payload = newSubscription.toJsonString().getBytes("UTF8");
+			byte[] payload;
+			try {
+				payload = newSubscription.toJsonString().getBytes("UTF8");
+			} catch (JSONException e) {
+				throw new MalformedInputException("Invalid subscription", "failed to marshal subscription object");
+			}
 			httpPost.setEntity(new ByteArrayEntity(payload));
 			signPostRequest(httpPost, payload);
 			res = httpClient.execute(httpPost);
-			if (res.getStatusLine().getStatusCode() == 401) {
-				throw new IOException("Failed to authorize request");
-			}
-			StatusLine statusLine = res.getStatusLine();
-			int status = statusLine.getStatusCode();
 
+			int status = res.getStatusLine().getStatusCode();
 			String resJsonString = EntityUtils.toString(res.getEntity());
 			EntityUtils.consume(res.getEntity());
-			if (status == 200) {
-				// read result to extract id
-				JSONObject resJson;
-				try {
-					resJson = new JSONObject(resJsonString);
-					return resJson.getString("id");
-				} catch (JSONException e) {
-					throw new IOException("Parsing response failed", e);
-				}
-			} else {
-				res.getEntity().getContent().close();
-				throw new IOException("failed to add subscription - status code " + status + " : " + resJsonString);
+
+			if (status != 200) {
+				throw processError(resJsonString, status);
 			}
-		} catch (IOException e) {
-			throw new IOException("Failed to add subscription", e);
-		} catch (JSONException e) {
-			throw new IOException("Failed to marhsall subscription", e);
+			// read result to extract id
+			JSONObject resJson;
+			try {
+				resJson = new JSONObject(resJsonString);
+				return resJson.getString("id");
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid add subscription response", "Parsing response failed");
+			}
 		} finally {
-			res.close();
+			if (null != res)
+				res.close();
 		}
 	}
 
 	@Override
-	public void deleteSubscription(String id) throws IOException {
-		HttpDelete httpDelete = new HttpDelete(this.endpoint.endpoint() + "/subscriptions/" + id);
-		signRequest(httpDelete);
-		CloseableHttpResponse res = httpClient.execute(httpDelete);
-		if (res.getStatusLine().getStatusCode() == 401) {
-			throw new IOException("Failed to authorize request");
-		}
-		StatusLine statusLine = res.getStatusLine();
-		int status = statusLine.getStatusCode();
-		EntityUtils.consume(res.getEntity());
-		res.close();
-		if (status == 200) {
-			return;
-		} else {
-			throw new IOException("failed to delete given subscription");
-		}
-	}
+	public void deleteSubscription(String id) throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
+		try {
+			HttpDelete httpDelete = new HttpDelete(this.endpoint.endpoint() + "/subscriptions/" + id);
+			signRequest(httpDelete);
+			res = httpClient.execute(httpDelete);
 
-	private void checkResponse(HttpResponse res) throws IOException {
-		int statusCode = res.getStatusLine().getStatusCode();
-		switch (statusCode) {
-		case 200:
-			// success and continue
-			break;
-		case 401:
-			throw new IOException("Authorization failed");
-		default:
-			throw new IOException("Request failed - " + statusCode);
+			int status = res.getStatusLine().getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+
+			if (status != 200) {
+				throw processError(resJsonString, status);
+			}
+			return;
+		} finally {
+			if (null != res)
+				res.close();
 		}
 	}
 
@@ -146,188 +157,258 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public long getBalance(String address) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/balance");
-		signRequest(httpGet);
-		CloseableHttpResponse res = httpClient.execute(httpGet);
-		checkResponse(res);
-		String resJsonString = EntityUtils.toString(res.getEntity());
-		JSONObject resJson;
-		res.close();
+	public long getBalance(String address) throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
 		try {
-			resJson = new JSONObject(resJsonString);
-			return resJson.getLong("balance");
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/balance");
+			signRequest(httpGet);
+			res = httpClient.execute(httpGet);
+
+			int status = res.getStatusLine().getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+			JSONObject resJson;
+			
+			if (status != 200) {
+				throw processError(resJsonString, status);
+			}
+			try {
+				resJson = new JSONObject(resJsonString);
+				return resJson.getLong("balance");
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid balance response", "Parsing response failed");
+			}
+		} finally {
+			if (null != res)
+				res.close();
+		}
+
+	}
+
+	@Override
+	public String getBestBlockHash() throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
+		try {
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
+			signRequest(httpGet);
+			res = httpClient.execute(httpGet);
+
+			int status = res.getStatusLine().getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+			JSONObject resJson;
+
+			if (status != 200) {
+				throw processError(resJsonString, status);
+			}
+			try {
+				resJson = new JSONObject(resJsonString);
+				return resJson.getString("best_block_hash");
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid blockchain status response", "Parsing response failed");
+			}
+		} finally {
+			if (null != res)
+				res.close();
 		}
 	}
 
 	@Override
-	public String getBestBlockHash() throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
-		signRequest(httpGet);
-		CloseableHttpResponse res = httpClient.execute(httpGet);
-		checkResponse(res);
-
-		String resJsonString = EntityUtils.toString(res.getEntity());
-		JSONObject resJson;
-		res.close();
+	public int getBestHeight() throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
 		try {
-			resJson = new JSONObject(resJsonString);
-			return resJson.getString("best_block_hash");
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
+			signRequest(httpGet);
+			res = httpClient.execute(httpGet);
+
+			int status = res.getStatusLine().getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+
+			if (status != 200) {
+				throw processError(resJsonString, status);
+			}
+			try {
+				JSONObject resJson = new JSONObject(resJsonString);
+				return resJson.getInt("best_height");
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid blockchain status response", "Parsing response failed");
+			}
+		} finally {
+			if (null != res)
+				res.close();
 		}
 	}
 
 	@Override
-	public int getBestHeight() throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
-		signRequest(httpGet);
-		CloseableHttpResponse res = httpClient.execute(httpGet);
-		checkResponse(res);
-
-		String resJsonString = EntityUtils.toString(res.getEntity());
-		JSONObject resJson;
-		res.close();
+	public Block getBlock(String blockId) throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
 		try {
-			resJson = new JSONObject(resJsonString);
-			return resJson.getInt("best_height");
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blocks/" + blockId);
+			signRequest(httpGet);
+			res = httpClient.execute(httpGet);
+
+			int status = res.getStatusLine().getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+
+			if (status != 200) {
+				throw processError(resJsonString, status);
+			}
+
+			try {
+				JSONObject resJson = new JSONObject(resJsonString);
+				String[] txIds;
+				JSONArray childJsons = resJson.getJSONArray("transaction_list");
+				txIds = new String[childJsons.length()];
+				for (int i = 0; i < childJsons.length(); i++) {
+					txIds[i] = childJsons.getString(i);
+				}
+				String parentId;
+				if (resJson.isNull("parent")) {
+					parentId = null;
+				} else {
+					parentId = resJson.getString("parent");
+				}
+				return new Block(DateTime.parse(resJson.getString("confirmation_time")).toDate(),
+						resJson.getString("block_hash"), new String[] { resJson.getJSONArray("children").getString(0) },
+						resJson.getInt("height"), parentId, txIds);
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid server response", "failed to parse block information");
+			}
+		} finally {
+			if (null != res)
+				res.close();
 		}
 	}
 
 	@Override
-	public Block getBlock(String blockId) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blocks/" + blockId);
-		signRequest(httpGet);
-		CloseableHttpResponse res = httpClient.execute(httpGet);
-		checkResponse(res);
-
-		String resJsonString = EntityUtils.toString(res.getEntity());
-
-		JSONObject resJson;
-		res.close();
+	public Transaction getTransaction(String transactionId) throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
 		try {
-			resJson = new JSONObject(resJsonString);
-			String[] txIds;
-			JSONArray childJsons = resJson.getJSONArray("transaction_list");
-			txIds = new String[childJsons.length()];
-			for (int i = 0; i < childJsons.length(); i++) {
-				txIds[i] = childJsons.getString(i);
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/transactions/" + transactionId);
+			signRequest(httpGet);
+			res = httpClient.execute(httpGet);
+			
+			int status = res.getStatusLine().getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+
+			if (status != 200) {
+				throw processError(resJsonString, status);
 			}
-			String parentId;
-			if (resJson.isNull("parent")) {
-				parentId = null;
-			} else {
-				parentId = resJson.getString("parent");
+
+			try {
+				String[] blockIds;
+				Input[] inputs;
+				Output[] outputs;
+
+				JSONObject resJson = new JSONObject(resJsonString);
+
+				JSONArray transactionBlockId = resJson.getJSONArray("block_hash");
+				blockIds = new String[transactionBlockId.length()];
+				for (int i = 0; i < transactionBlockId.length(); i++) {
+					blockIds[i] = transactionBlockId.getJSONObject(i).getString("block_hash");
+				}
+
+				JSONArray transactionInputs = resJson.getJSONArray("inputs");
+				inputs = new Input[transactionInputs.length()];
+				for (int i = 0; i < transactionInputs.length(); i++) {
+					inputs[i] = new Input(transactionInputs.getJSONObject(i).getInt("output_index"),
+							transactionInputs.getJSONObject(i).getJSONArray("address").getString(0),
+							transactionInputs.getJSONObject(i).getString("transaction_hash"),
+							transactionInputs.getJSONObject(i).getLong("value"));
+
+				}
+
+				JSONArray transactionOutputs = resJson.getJSONArray("outputs");
+				outputs = new Output[transactionOutputs.length()];
+				for (int i = 0; i < transactionOutputs.length(); i++) {
+					JSONObject transactionOutput = transactionOutputs.getJSONObject(i);
+					outputs[i] = new Output(transactionId, i, transactionOutput.getJSONArray("address").getString(0),
+							transactionOutput.getBoolean("used"), transactionOutput.getLong("value"),
+							transactionOutput.getString("script"));
+
+				}
+
+				return new Transaction(resJson.getString("transaction_hash"), blockIds,
+						DateTime.parse(resJson.getString("time")).toDate(), resJson.getBoolean("coinbase"), inputs,
+						outputs);
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid transaction response", "Parsing response failed");
 			}
-			return new Block(DateTime.parse(resJson.getString("confirmation_time")).toDate(),
-					resJson.getString("block_hash"), new String[] { resJson.getJSONArray("children").getString(0) },
-					resJson.getInt("height"), parentId, txIds);
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
+		} finally {
+			if (null != res)
+				res.close();
 		}
 	}
 
 	@Override
-	public Transaction getTransaction(String transactionId) throws IOException {
-
-		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/transactions/" + transactionId);
-		signRequest(httpGet);
-		CloseableHttpResponse res = httpClient.execute(httpGet);
-		checkResponse(res);
-
-		String resJsonString = EntityUtils.toString(res.getEntity());
-
-		JSONObject resJson;
-		res.close();
+	public String[] getTransactions(String address) throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
 		try {
-			String[] blockIds;
-			Input[] inputs;
-			Output[] outputs;
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/history");
+			signRequest(httpGet);
+			res = httpClient.execute(httpGet);
+		
 
-			resJson = new JSONObject(resJsonString);
-
-			JSONArray transactionBlockId = resJson.getJSONArray("block_hash");
-			blockIds = new String[transactionBlockId.length()];
-			for (int i = 0; i < transactionBlockId.length(); i++) {
-				blockIds[i] = transactionBlockId.getJSONObject(i).getString("block_hash");
+			int status = res.getStatusLine().getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+			if (status != 200) {
+				throw processError(resJsonString, status);
 			}
-
-			JSONArray transactionInputs = resJson.getJSONArray("inputs");
-			inputs = new Input[transactionInputs.length()];
-			for (int i = 0; i < transactionInputs.length(); i++) {
-				inputs[i] = new Input(transactionInputs.getJSONObject(i).getInt("output_index"),
-						transactionInputs.getJSONObject(i).getJSONArray("address").getString(0),
-						transactionInputs.getJSONObject(i).getString("transaction_hash"),
-						transactionInputs.getJSONObject(i).getLong("value"));
-
+			
+			JSONArray resJson;
+			List<String> transactions = new LinkedList<String>();
+			try {
+				resJson = new JSONArray(resJsonString);
+				for (int i = 0; i < resJson.length(); i++) {
+					transactions.add(resJson.getString(i));
+				}
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid server response", "failed to parse address history");
 			}
-
-			JSONArray transactionOutputs = resJson.getJSONArray("outputs");
-			outputs = new Output[transactionOutputs.length()];
-			for (int i = 0; i < transactionOutputs.length(); i++) {
-				JSONObject transactionOutput = transactionOutputs.getJSONObject(i);
-				outputs[i] = new Output(transactionId, i, transactionOutput.getJSONArray("address").getString(0),
-						transactionOutput.getBoolean("used"), transactionOutput.getLong("value"),
-						transactionOutput.getString("script"));
-
-			}
-
-			return new Transaction(resJson.getString("transaction_hash"), blockIds,
-					DateTime.parse(resJson.getString("time")).toDate(), resJson.getBoolean("coinbase"), inputs,
-					outputs);
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
+			return transactions.toArray(new String[0]);
+		} finally {
+			if (null != res)
+				res.close();
 		}
 	}
 
 	@Override
-	public String[] getTransactions(String address) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/history");
-		signRequest(httpGet);
-		CloseableHttpResponse res = httpClient.execute(httpGet);
-		checkResponse(res);
-
-		String resJsonString = EntityUtils.toString(res.getEntity());
-		JSONArray resJson;
-		res.close();
-		List<String> transactions = new LinkedList<String>();
+	public Output[] getUnspentOutputs(String address) throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
 		try {
-			resJson = new JSONArray(resJsonString);
-			for (int i = 0; i < resJson.length(); i++) {
-				transactions.add(resJson.getString(i));
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/unspentoutputs");
+			signRequest(httpGet);
+			res = httpClient.execute(httpGet);
+			
+			int status = res.getStatusLine().getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+			
+			if (status != 200) {
+				throw processError(resJsonString, status);
 			}
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
-		}
-		return transactions.toArray(new String[0]);
-	}
-
-	@Override
-	public Output[] getUnspentOutputs(String address) throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/unspentoutputs");
-		signRequest(httpGet);
-		CloseableHttpResponse res = httpClient.execute(httpGet);
-		checkResponse(res);
-		String resJsonString = EntityUtils.toString(res.getEntity());
-		EntityUtils.consume(res.getEntity());
-		JSONArray resJson;
-		res.close();
-		List<Output> outputs = new LinkedList<Output>();
-		try {
-			resJson = new JSONArray(resJsonString);
-			for (int i = 0; i < resJson.length(); i++) {
-				JSONObject output = resJson.getJSONObject(i);
-				outputs.add(new Output(output.getString("transaction_hash"), output.getInt("index"), address, false,
-						output.getLong("value"), output.getString("script")));
+			
+			
+			List<Output> outputs = new LinkedList<Output>();
+			try {
+				JSONArray resJson = new JSONArray(resJsonString);
+				for (int i = 0; i < resJson.length(); i++) {
+					JSONObject output = resJson.getJSONObject(i);
+					outputs.add(new Output(output.getString("transaction_hash"), output.getInt("index"), address, false,
+							output.getLong("value"), output.getString("script")));
+				}
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid server response", "failed to parse unspent output information");
 			}
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
+			return outputs.toArray(new Output[0]);
+		} finally {
+			if (null != res)
+				res.close();
 		}
-		return outputs.toArray(new Output[0]);
 	}
 
 	@Override
@@ -352,70 +433,75 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public Subscription[] listSubscriptions() throws IOException {
-		HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/subscriptions");
-		signRequest(httpGet);
-		HttpResponse res = httpClient.execute(httpGet);
-
-		if (res.getStatusLine().getStatusCode() == 401) {
-			throw new IOException("Failed to authorize request");
-		}
-
-		String resJsonString = EntityUtils.toString(res.getEntity());
-		EntityUtils.consume(res.getEntity());
-		JSONArray resJson;
-
-		List<Subscription> subscriptions = new LinkedList<Subscription>();
+	public Subscription[] listSubscriptions() throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
 		try {
-			resJson = new JSONArray(resJsonString);
-			for (int i = 0; i < resJson.length(); i++) {
-				JSONObject subscription = resJson.getJSONObject(i);
-				subscriptions.add(new Subscription(subscription.getString("id"), subscription.getString("address"),
-						subscription.getString("action")));
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/subscriptions");
+			signRequest(httpGet);
+			res = httpClient.execute(httpGet);
 
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+			
+			List<Subscription> subscriptions = new LinkedList<Subscription>();
+			try {
+				JSONArray resJson = new JSONArray(resJsonString);
+				for (int i = 0; i < resJson.length(); i++) {
+					JSONObject subscription = resJson.getJSONObject(i);
+					subscriptions.add(new Subscription(subscription.getString("id"), subscription.getString("address"),
+							subscription.getString("action")));
+
+				}
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid server response", "failed to parse subscription information");
 			}
-		} catch (JSONException e) {
-			throw new IOException("Parsing response failed", e);
+			return subscriptions.toArray(new Subscription[0]);
+		} finally {
+			if (null != res)
+				res.close();
 		}
-		return subscriptions.toArray(new Subscription[0]);
 	}
 
 	@Override
-	public void sendTransaction(String rawTransaction) throws IOException, TransactionRejectedException {
+	public void sendTransaction(String rawTransaction) throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
 		try {
 			HttpPost httpPost = new HttpPost(this.endpoint.endpoint() + "/transactions");
 			JSONObject txRequest = new JSONObject();
-			txRequest.put("tx", rawTransaction);
+			try {
+				txRequest.put("tx", rawTransaction);
+			} catch (JSONException e) {
+				throw new MalformedInputException("Invalid subscription", "failed to marshal subscription object");
+			}
 			byte[] payload = txRequest.toString().getBytes("UTF8");
 			httpPost.setEntity(new ByteArrayEntity(payload));
 			signPostRequest(httpPost, payload);
-			CloseableHttpResponse res = httpClient.execute(httpPost);
-			if (res.getStatusLine().getStatusCode() == 401) {
-				throw new IOException("Failed to authorize request");
-			}
+			res = httpClient.execute(httpPost);
+	
 			StatusLine statusLine = res.getStatusLine();
 			int status = statusLine.getStatusCode();
-			res.close();
-			if (status == 409) {
-				throw new IOException("conflicting transaction", new IOException(statusLine.toString()));
-			} else if (status != 200) {
-				throw new IOException("failed to send transaction", new IOException(statusLine.toString()));
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+
+			if (status != 200) {
+				throw processError(resJsonString, status);
 			}
-		} catch (JSONException e) {
-			throw new IOException("Failed to construct request", e);
+		} finally {
+			if (null != res)
+				res.close();
 		}
 	}
 
-	private void signPostRequest(HttpPost req, byte[] content) throws IOException {
+	private void signPostRequest(HttpPost req, byte[] content) throws CoinStackException {
 		try {
 			String md5 = calculateMD5(content);
 			req.addHeader(HMAC.CONTENT_MD5, md5);
 			HMAC.signRequest(req, this.credentialProvider.getAccessKey(), this.credentialProvider.getSecretKey(),
 					HMAC.generateTimestamp());
 		} catch (HMACSigningException e) {
-			throw new IOException("Failed to sign request", e);
+			throw new AuthSignException("Failed to sign auth header", "failed to generate HMAC");
 		} catch (NoSuchAlgorithmException e) {
-			throw new IOException("Failed to sign request", e);
+			throw new AuthSignException("Failed to calculate MD5 header", "algorithm not found");
 		}
 	}
 
@@ -426,48 +512,53 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		return result;
 	}
 
-	private void signRequest(HttpRequestBase req) throws IOException {
+	private void signRequest(HttpRequestBase req) throws CoinStackException {
 		try {
 			HMAC.signRequest(req, this.credentialProvider.getAccessKey(), this.credentialProvider.getSecretKey(),
 					HMAC.generateTimestamp());
 		} catch (HMACSigningException e) {
-			throw new IOException("Failed to sign request", e);
+			throw new AuthSignException("Failed to sign auth header", "failed to generate HMAC");
 		}
 	}
 
 	@Override
-	public String stampDocument(String hash) throws IOException {
-		HttpPost httpPost = new HttpPost(this.endpoint.endpoint() + "/stamps");
-		JSONObject txRequest = new JSONObject();
+	public String stampDocument(String hash) throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
 		try {
-			txRequest.put("hash", hash);
-		} catch (JSONException e) {
-			throw new IOException("failed to create request");
-		}
-		byte[] payload = txRequest.toString().getBytes("UTF8");
-		httpPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-		httpPost.setEntity(new ByteArrayEntity(payload));
-		signPostRequest(httpPost, payload);
+			HttpPost httpPost = new HttpPost(this.endpoint.endpoint() + "/stamps");
+			JSONObject txRequest = new JSONObject();
+			try {
+				txRequest.put("hash", hash);
+			} catch (JSONException e) {
+				throw new MalformedInputException("Invalid stamp request", "failed to marshal stamp request");
+			}
+			byte[] payload = txRequest.toString().getBytes("UTF8");
+			httpPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+			httpPost.setEntity(new ByteArrayEntity(payload));
+			signPostRequest(httpPost, payload);
 
-		CloseableHttpResponse res = httpClient.execute(httpPost);
-		
-		StatusLine statusLine = res.getStatusLine();
-		int status = statusLine.getStatusCode();
+			res = httpClient.execute(httpPost);
 
-		String resJsonString = EntityUtils.toString(res.getEntity());
-		EntityUtils.consume(res.getEntity());
-		if (status == 200) {
+			StatusLine statusLine = res.getStatusLine();
+			int status = statusLine.getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+
+			if (status != 200) {
+				throw processError(resJsonString, status);
+			}
+
 			// read result to extract id
 			JSONObject resJson;
 			try {
 				resJson = new JSONObject(resJsonString);
 				return resJson.getString("stampid");
 			} catch (JSONException e) {
-				throw new IOException("Parsing response failed", e);
+				throw new InvalidResponseException("Invalid server response", "failed to parse stamp respnose");
 			}
-		} else {
-			res.getEntity().getContent().close();
-			throw new IOException("failed to stamp document - status code " + status + " : " + resJsonString);
+		} finally {
+			if (null != res)
+				res.close();
 		}
 	}
 
