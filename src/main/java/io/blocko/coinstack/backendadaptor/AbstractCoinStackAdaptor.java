@@ -5,6 +5,7 @@ import java.io.IOException;
 import io.blocko.coinstack.exception.CoinStackException;
 import io.blocko.coinstack.model.Block;
 import io.blocko.coinstack.model.Output;
+import io.blocko.coinstack.model.Stamp;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
 
@@ -40,5 +41,7 @@ public abstract class AbstractCoinStackAdaptor {
 	public abstract String addSubscription(Subscription newSubscription) throws IOException, CoinStackException;
 
 	public abstract String stampDocument(String hash) throws IOException, CoinStackException;
+
+	public abstract  Stamp getStamp(String stampId) throws IOException, CoinStackException;
 
 }

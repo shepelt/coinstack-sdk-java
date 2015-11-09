@@ -49,6 +49,7 @@ import io.blocko.coinstack.model.BlockchainStatus;
 import io.blocko.coinstack.model.CredentialsProvider;
 import io.blocko.coinstack.model.DataTransactionOutput;
 import io.blocko.coinstack.model.Output;
+import io.blocko.coinstack.model.Stamp;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
 import io.blocko.coinstack.util.EnvironmentVariableCredentialsProvider;
@@ -210,7 +211,7 @@ public class CoinStackClient {
 	 * @param newSubscription
 	 * @return
 	 * @throws IOException
-	 * @throws CoinStackException 
+	 * @throws CoinStackException
 	 */
 	public String addSubscription(Subscription newSubscription) throws IOException, CoinStackException {
 		Endpoint.init();
@@ -404,7 +405,7 @@ public class CoinStackClient {
 	 * 
 	 * @param id
 	 * @throws IOException
-	 * @throws CoinStackException 
+	 * @throws CoinStackException
 	 */
 	public void deleteSubscription(String id) throws IOException, CoinStackException {
 		Endpoint.init();
@@ -419,7 +420,7 @@ public class CoinStackClient {
 	 * @return balance in satoshi format (e.g. 0.0001 BTC = 10000 satoshi)
 	 * @throws IOException
 	 *             in case of network failure
-	 * @throws CoinStackException 
+	 * @throws CoinStackException
 	 */
 	public long getBalance(String address) throws IOException, CoinStackException {
 		Endpoint.init();
@@ -434,7 +435,7 @@ public class CoinStackClient {
 	 * @return block information and related transaction
 	 * @throws IOException
 	 *             in case of network failure
-	 * @throws CoinStackException 
+	 * @throws CoinStackException
 	 */
 	public Block getBlock(String blockId) throws IOException, CoinStackException {
 		Endpoint.init();
@@ -447,7 +448,7 @@ public class CoinStackClient {
 	 * @return current status of Blockchain in BlockchainStatus object
 	 * @throws IOException
 	 *             in case of network failure
-	 * @throws CoinStackException 
+	 * @throws CoinStackException
 	 */
 	public BlockchainStatus getBlockchainStatus() throws IOException, CoinStackException {
 		Endpoint.init();
@@ -496,7 +497,7 @@ public class CoinStackClient {
 	 * @return transaction information, inputs, and outputs
 	 * @throws IOException
 	 *             in case of network failure
-	 * @throws CoinStackException 
+	 * @throws CoinStackException
 	 */
 	public Transaction getTransaction(String transactionId) throws IOException, CoinStackException {
 		Endpoint.init();
@@ -511,7 +512,7 @@ public class CoinStackClient {
 	 * @return list of transaction IDs related to given address
 	 * @throws IOException
 	 *             in case of network failure
-	 * @throws CoinStackException 
+	 * @throws CoinStackException
 	 */
 	public String[] getTransactions(String address) throws IOException, CoinStackException {
 		Endpoint.init();
@@ -526,7 +527,7 @@ public class CoinStackClient {
 	 * @return list of unspent transaction outputs
 	 * @throws IOException
 	 *             in case of network failure
-	 * @throws CoinStackException 
+	 * @throws CoinStackException
 	 */
 	public Output[] getUnspentOutputs(String address) throws IOException, CoinStackException {
 		Endpoint.init();
@@ -673,7 +674,7 @@ public class CoinStackClient {
 	 * 
 	 * @return
 	 * @throws IOException
-	 * @throws CoinStackException 
+	 * @throws CoinStackException
 	 */
 	public Subscription[] listSubscriptions() throws IOException, CoinStackException {
 		Endpoint.init();
@@ -748,7 +749,7 @@ public class CoinStackClient {
 
 		return coinStackAdaptor.stampDocument(documentHash);
 	}
-	
+
 	/**
 	 * Construct a transaction for storing raw data and sign it using private
 	 * key
@@ -886,5 +887,10 @@ public class CoinStackClient {
 		byte[] rawTx = tx.bitcoinSerialize();
 		// // convert to string encoded hex and return
 		return Utils.HEX.encode(rawTx);
+	}
+
+	public Stamp getStamp(String stampId) throws IOException, CoinStackException {
+		Endpoint.init();
+		return coinStackAdaptor.getStamp(stampId);
 	}
 }

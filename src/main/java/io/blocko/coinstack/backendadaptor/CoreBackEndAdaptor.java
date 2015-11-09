@@ -41,6 +41,7 @@ import io.blocko.coinstack.model.Block;
 import io.blocko.coinstack.model.CredentialsProvider;
 import io.blocko.coinstack.model.Input;
 import io.blocko.coinstack.model.Output;
+import io.blocko.coinstack.model.Stamp;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
 import io.blocko.coinstack.util.HMAC;
@@ -168,7 +169,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			String resJsonString = EntityUtils.toString(res.getEntity());
 			EntityUtils.consume(res.getEntity());
 			JSONObject resJson;
-			
+
 			if (status != 200) {
 				throw processError(resJsonString, status);
 			}
@@ -289,7 +290,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/transactions/" + transactionId);
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
-			
+
 			int status = res.getStatusLine().getStatusCode();
 			String resJsonString = EntityUtils.toString(res.getEntity());
 			EntityUtils.consume(res.getEntity());
@@ -350,7 +351,6 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/history");
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
-		
 
 			int status = res.getStatusLine().getStatusCode();
 			String resJsonString = EntityUtils.toString(res.getEntity());
@@ -358,7 +358,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			if (status != 200) {
 				throw processError(resJsonString, status);
 			}
-			
+
 			JSONArray resJson;
 			List<String> transactions = new LinkedList<String>();
 			try {
@@ -383,16 +383,15 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/unspentoutputs");
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
-			
+
 			int status = res.getStatusLine().getStatusCode();
 			String resJsonString = EntityUtils.toString(res.getEntity());
 			EntityUtils.consume(res.getEntity());
-			
+
 			if (status != 200) {
 				throw processError(resJsonString, status);
 			}
-			
-			
+
 			List<Output> outputs = new LinkedList<Output>();
 			try {
 				JSONArray resJson = new JSONArray(resJsonString);
@@ -402,7 +401,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 							output.getLong("value"), output.getString("script")));
 				}
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid server response", "failed to parse unspent output information");
+				throw new InvalidResponseException("Invalid server response",
+						"failed to parse unspent output information");
 			}
 			return outputs.toArray(new Output[0]);
 		} finally {
@@ -442,7 +442,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 			String resJsonString = EntityUtils.toString(res.getEntity());
 			EntityUtils.consume(res.getEntity());
-			
+
 			List<Subscription> subscriptions = new LinkedList<Subscription>();
 			try {
 				JSONArray resJson = new JSONArray(resJsonString);
@@ -453,7 +453,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 				}
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid server response", "failed to parse subscription information");
+				throw new InvalidResponseException("Invalid server response",
+						"failed to parse subscription information");
 			}
 			return subscriptions.toArray(new Subscription[0]);
 		} finally {
@@ -477,7 +478,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			httpPost.setEntity(new ByteArrayEntity(payload));
 			signPostRequest(httpPost, payload);
 			res = httpClient.execute(httpPost);
-	
+
 			StatusLine statusLine = res.getStatusLine();
 			int status = statusLine.getStatusCode();
 			String resJsonString = EntityUtils.toString(res.getEntity());
@@ -555,6 +556,35 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				return resJson.getString("stampid");
 			} catch (JSONException e) {
 				throw new InvalidResponseException("Invalid server response", "failed to parse stamp respnose");
+			}
+		} finally {
+			if (null != res)
+				res.close();
+		}
+	}
+
+	@Override
+	public Stamp getStamp(String stampId) throws IOException, CoinStackException {
+		CloseableHttpResponse res = null;
+		try {
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/stamps/" + stampId);
+			signRequest(httpGet);
+			res = httpClient.execute(httpGet);
+
+			int status = res.getStatusLine().getStatusCode();
+			String resJsonString = EntityUtils.toString(res.getEntity());
+			EntityUtils.consume(res.getEntity());
+
+			if (status != 200) {
+				throw processError(resJsonString, status);
+			}
+
+			try {
+				JSONObject resJson = new JSONObject(resJsonString);
+				return new Stamp(resJson.getString("tx"), resJson.getInt("vout"), resJson.getInt("confirmations"),
+						DateTime.parse(resJson.getString("timestamp")).toDate());
+			} catch (JSONException e) {
+				throw new InvalidResponseException("Invalid stamp response", "Parsing response failed");
 			}
 		} finally {
 			if (null != res)

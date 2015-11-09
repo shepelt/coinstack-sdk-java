@@ -11,9 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 import io.blocko.coinstack.backendadaptor.AbstractCoinStackAdaptor;
+import io.blocko.coinstack.exception.CoinStackException;
 import io.blocko.coinstack.model.Block;
 import io.blocko.coinstack.model.Input;
 import io.blocko.coinstack.model.Output;
+import io.blocko.coinstack.model.Stamp;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
 
@@ -186,6 +188,12 @@ public class MockCoinStackAdaptor extends AbstractCoinStackAdaptor {
 
 	@Override
 	public String stampDocument(String hash) throws IOException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Stamp getStamp(String stampId) throws IOException, CoinStackException {
 		// TODO Auto-generated method stub
 		return null;
 	}

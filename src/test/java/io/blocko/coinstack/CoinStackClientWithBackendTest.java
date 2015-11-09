@@ -20,6 +20,7 @@ import io.blocko.coinstack.TransactionBuilder;
 import io.blocko.coinstack.backendadaptor.CoreBackEndAdaptor;
 import io.blocko.coinstack.exception.CoinStackException;
 import io.blocko.coinstack.model.CredentialsProvider;
+import io.blocko.coinstack.model.Stamp;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
 
@@ -264,5 +265,11 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 //		String stampid = coinStackClient.stampDocument(Hex.encodeHexString(hash.getBytes()));
 //		System.out.println(stampid);
 //		assertNotNull(stampid);
+		
+		// fetch stamp
+		Stamp stamp = coinStackClient.getStamp("f0276c7a47b83e9af575047dc4674237772e4d1ea2c7db9aeb1e3e2f049b28b8-0");
+		assertNotNull(stamp.getTimestamp());
+		assertNotNull(stamp.getTxId());
+//		System.out.println(stamp);
 	}
 }
