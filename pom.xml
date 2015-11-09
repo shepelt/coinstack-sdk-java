@@ -3,7 +3,7 @@
 
 	<groupId>io.blocko</groupId>
 	<artifactId>coinstack</artifactId>
-	<version>3.0.10-SNAPSHOT</version>
+	<version>3.0.10</version>
 	<packaging>jar</packaging>
 
 	<name>coinstack</name>
@@ -26,7 +26,7 @@
 		<connection>scm:git:https://bitbucket.org/cloudwallet/coinstack-sdk-java</connection>
 		<developerConnection>scm:git:https://bitbucket.org/cloudwallet/coinstack-sdk-java</developerConnection>
 		<url>scm:git:https://bitbucket.org/cloudwallet/coinstack-sdk-java</url>
-		<tag>HEAD</tag>
+		<tag>coinstack-3.0.10</tag>
 	</scm>
 
 	<developers>
