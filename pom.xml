@@ -83,22 +83,76 @@
 									<excludes>
 										<exclude>META-INF/*.SF</exclude>
 										<exclude>META-INF/*.DSA</exclude>
+										<exclude>javax/**</exclude>
 										<exclude>META-INF/*.RSA</exclude>
 									</excludes>
 								</filter>
 							</filters>
-							<minimizeJar>true</minimizeJar>
 							<artifactSet>
 								<includes>
-									<include>*:*</include>
+									<include>org.apache.httpcomponents:httpclient</include>
+									<include>org.json:json</include>
+									<include>org.bitcoinj:bitcoinj-core</include>
+									<include>org.slf4j:slf4j-api</include>
+									<include>org.slf4j:slf4j-nop</include>
+									<include>commons-codec:commons-codec</include>
+									<include>commons-io:commons-io</include>
+									<include>joda-time:joda-time</include>
+									<include>com.madgag.spongycastle:core</include>
+									<include>com.google.protobuf:protobuf-java</include>
+									<include>org.apache.httpcomponents:httpcore</include>
+									<include>commons-logging:commons-logging</include>
+									<include>com.google.guava:guava</include>
+									<include>com.google.code.findbugs:jsr305</include>
+									<include>net.jcip:jcip-annotations</include>
+									<include>com.lambdaworks:scrypt</include>
+									<include>org.bitcoinj:orchid</include>
 								</includes>
 							</artifactSet>
 							<relocations>
 								<relocation>
-									<shadedPattern>io.blocko.</shadedPattern>
-									<excludes>
-										<exclude>io.blocko.**</exclude>
-									</excludes>
+									<pattern>com.google</pattern>
+									<shadedPattern>io.blocko.google</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache</pattern>
+									<shadedPattern>io.blocko.apache</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.bitcoinj</pattern>
+									<shadedPattern>io.blocko.bitcoinj</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.json</pattern>
+									<shadedPattern>io.blocko.json</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.madgag</pattern>
+									<shadedPattern>io.blocko.madgag</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>net.jcip</pattern>
+									<shadedPattern>io.blocko.jcip</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.lambdaworks</pattern>
+									<shadedPattern>io.blocko.lambdaworks</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.joda</pattern>
+									<shadedPattern>io.blocko.joda</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.bitcoin</pattern>
+									<shadedPattern>io.blocko.bitcoin</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.slf4j</pattern>
+									<shadedPattern>io.blocko.slf4j</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.spongycastle</pattern>
+									<shadedPattern>io.blocko.spongycastle</shadedPattern>
 								</relocation>
 							</relocations>
 						</configuration>
