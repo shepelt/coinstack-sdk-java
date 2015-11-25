@@ -326,9 +326,15 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				outputs = new Output[transactionOutputs.length()];
 				for (int i = 0; i < transactionOutputs.length(); i++) {
 					JSONObject transactionOutput = transactionOutputs.getJSONObject(i);
-					outputs[i] = new Output(transactionId, i, transactionOutput.getJSONArray("address").getString(0),
-							transactionOutput.getBoolean("used"), transactionOutput.getLong("value"),
-							transactionOutput.getString("script"));
+					if (transactionOutput.has("address")) {
+						outputs[i] = new Output(transactionId, i,
+								transactionOutput.getJSONArray("address").getString(0),
+								transactionOutput.getBoolean("used"), transactionOutput.getLong("value"),
+								transactionOutput.getString("script"));
+					} else {
+						outputs[i] = new Output(transactionId, i, null, transactionOutput.getBoolean("used"),
+								transactionOutput.getLong("value"), transactionOutput.getString("script"));
+					}
 
 				}
 
