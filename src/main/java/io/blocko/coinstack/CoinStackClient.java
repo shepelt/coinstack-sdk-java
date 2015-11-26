@@ -48,6 +48,7 @@ import io.blocko.coinstack.model.Block;
 import io.blocko.coinstack.model.BlockchainStatus;
 import io.blocko.coinstack.model.CredentialsProvider;
 import io.blocko.coinstack.model.DataTransactionOutput;
+import io.blocko.coinstack.model.DustyOutput;
 import io.blocko.coinstack.model.Output;
 import io.blocko.coinstack.model.Stamp;
 import io.blocko.coinstack.model.Subscription;
@@ -354,7 +355,12 @@ public class CoinStackClient {
 			} catch (AddressFormatException e) {
 				throw new MalformedInputException("Invalid output", "Malformed address");
 			}
-			txTemplate.addOutput(Coin.valueOf(output.getValue()), destinationAddressParsed);
+			if (builder.allowsDustyOutput()) {
+				txTemplate.addOutput(new DustyOutput(this.network, txTemplate, Coin.valueOf(output.getValue()),
+						destinationAddressParsed));
+			} else {
+				txTemplate.addOutput(Coin.valueOf(output.getValue()), destinationAddressParsed);
+			}
 		}
 
 		// add OP_RETURN
@@ -386,6 +392,7 @@ public class CoinStackClient {
 		request.changeAddress = fromAddress;
 		request.fee = Coin.valueOf(builder.getFee());
 		request.feePerKb = Coin.ZERO;
+		request.shuffleOutputs = builder.shuffleOutputs();
 
 		org.bitcoinj.core.Transaction tx;
 		try {

@@ -14,6 +14,8 @@ public class TransactionBuilder {
 	private long fee;
 	private List<Output> outputs;
 	private byte[] data;
+	private boolean allowDustyOutput = false;
+	private boolean shuffleOutputs = true;
 
 	/**
 	 * A helper class for creating a transaction template to be signed
@@ -35,27 +37,24 @@ public class TransactionBuilder {
 		outputs.add(new Output("", 0, destinationAddress, false, amount, null));
 	}
 
-	/**
-	 * Set transfer fee for transaction
-	 * 
-	 * @param fee
-	 *            amount of fee to pay to miners (minimum 0.0001 BTC = 10000
-	 *            satoshi)
-	 * @throws MalformedInputException 
-	 */
-	public void setFee(long fee) throws MalformedInputException {
-		if (fee < 10000) {
-			throw new MalformedInputException("Invalid fee", "Fee amount below dust threshold");
-		}
-		this.fee = fee;
+	public void allowDustyOutput(boolean allowDustyOutput) {
+		this.allowDustyOutput = allowDustyOutput;
 	}
 
-	protected Output[] getOutputs() {
-		return outputs.toArray(new Output[outputs.size()]);
+	public boolean allowsDustyOutput() {
+		return allowDustyOutput;
+	}
+
+	protected byte[] getData() {
+		return data;
 	}
 
 	protected long getFee() {
 		return fee;
+	}
+
+	protected Output[] getOutputs() {
+		return outputs.toArray(new Output[outputs.size()]);
 	}
 
 	/**
@@ -79,8 +78,27 @@ public class TransactionBuilder {
 		this.data = data;
 	}
 
-	protected byte[] getData() {
-		return data;
+	/**
+	 * Set transfer fee for transaction
+	 * 
+	 * @param fee
+	 *            amount of fee to pay to miners (minimum 0.0001 BTC = 10000
+	 *            satoshi)
+	 * @throws MalformedInputException 
+	 */
+	public void setFee(long fee) throws MalformedInputException {
+		if (fee < 10000) {
+			throw new MalformedInputException("Invalid fee", "Fee amount below dust threshold");
+		}
+		this.fee = fee;
+	}
+
+	public boolean shuffleOutputs() {
+		return shuffleOutputs;
+	}
+
+	public void shuffleOutputs(boolean shuffleOutputs) {
+		this.shuffleOutputs = shuffleOutputs;
 	}
 
 }

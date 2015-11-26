@@ -90,7 +90,6 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		assertNotNull(tx);
 		assertNotNull(tx.getOutputs()[0].getAddress());
 
-		
 		// try sending already spent tx
 		exceptionRaised = false;
 		try {
@@ -105,39 +104,66 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		if (!exceptionRaised) {
 			Assert.fail("exception not raised");
 		}
+
+		// create dusty tx
+		TransactionBuilder builder = new TransactionBuilder();
+		builder.allowDustyOutput(true);
+		builder.shuffleOutputs(false);
+		// Customer wallet "1G7qPEgoDMGhewBDK5D7JwMBoXakA33FgH"
+		// Shop wallet "1QDboPVWvsVCr9m71NcAjJwNU6Mpboo32V"
+
+		// Master wallet "1BgLLXDXpRpttubVKrj8VN262q4A5ebVBX"
+		// "KzUJ9T1NXyWGwGNTybL5x5xDZfp7Rzs96iwMXrEyw88NYHCjk6ZK"
+		// index 0
+
+		builder.addOutput("1G7qPEgoDMGhewBDK5D7JwMBoXakA33FgH", io.blocko.coinstack.Math.convertToSatoshi("0.0000061"));
+		// index 1
+		builder.addOutput("1QDboPVWvsVCr9m71NcAjJwNU6Mpboo32V", io.blocko.coinstack.Math.convertToSatoshi("0.0000062"));
+		builder.setData("testdata".getBytes());
+
+		rawTx = coinStackClient.createSignedTransaction(builder,
+				privateKeyWIF);
+		System.out.println(rawTx);
+		System.out.println(TransactionUtil.getTransactionHash(rawTx));
+		// coinStackClient.sendTransaction(rawTx);
 	}
 
 	@Test
 	public void testDataTransaction() throws Exception {
-//		String privateKeyWIF = "Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd";
-//		// String to = "1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168";
-//		// long amount = CoinStackClient.convertToSatoshi("0.0001");
-//		long fee = CoinStackClient.convertToSatoshi("0.0001");
-//		byte[] data = new java.math.BigInteger("5331d8a928b2043db77e340b523547bf16cb4aa483f0645fe0a290ed1f20aab76257", 16).toByteArray();
-//		String rawTx = coinStackClient.createDataTransaction(privateKeyWIF, fee, data);
-//		assertNotNull(rawTx);
-//		System.out.println(rawTx);
-//		assertNotNull(CoinStackClient.getTransactionHash(rawTx));
-//		System.out.println(CoinStackClient.getTransactionHash(rawTx));
-//		System.out.println(ECKey.deriveAddress(privateKeyWIF));
-//		// try sending raw tx
-//		try {
-//			 coinStackClient.sendTransaction(rawTx);
-//		} catch (Exception e) {
-//			System.out.println(e);
-//			System.out.println(e.getCause());
-//			Assert.fail("sending tx failed");
-//		}
-//
-//		String failedTx = "0100000001279b60531d56b5403340edf41e5c866b005711c6f1c865476ea22bab4018008f010000006a473044022030677277e6e99e6dfe19df89411ebcc5d2fca4bd53a2873fac45b70be469034402203acb73750307258af3a4ca77a4d1ec0798415e1eeaa0df172bdbae1ee3555bc5012102e7185cfb5970912f40d0c24d0c1a15bc6ee03b129378852d59cfc278fe12b185ffffffff020000000000000000246a2253312cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b98244027c901000000001976a914c698f4239a60ff16b29a575405178eb12d3e04bf88ac00000000";
-//		System.out.println(CoinStackClient.getTransactionHash(failedTx));
-//		try {
-//			 coinStackClient.sendTransaction(failedTx);
-//		} catch (Exception e) {
-//			System.out.println(e);
-//			System.out.println(e.getCause());
-//			Assert.fail("sending tx failed");
-//		}
+		// String privateKeyWIF =
+		// "Kwg7NfVRrnrDUehdE9hn3qEZ51Tfk7rdr6rmyoHvjhRhoZE1KVkd";
+		// // String to = "1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168";
+		// // long amount = CoinStackClient.convertToSatoshi("0.0001");
+		// long fee = CoinStackClient.convertToSatoshi("0.0001");
+		// byte[] data = new
+		// java.math.BigInteger("5331d8a928b2043db77e340b523547bf16cb4aa483f0645fe0a290ed1f20aab76257",
+		// 16).toByteArray();
+		// String rawTx = coinStackClient.createDataTransaction(privateKeyWIF,
+		// fee, data);
+		// assertNotNull(rawTx);
+		// System.out.println(rawTx);
+		// assertNotNull(CoinStackClient.getTransactionHash(rawTx));
+		// System.out.println(CoinStackClient.getTransactionHash(rawTx));
+		// System.out.println(ECKey.deriveAddress(privateKeyWIF));
+		// // try sending raw tx
+		// try {
+		// coinStackClient.sendTransaction(rawTx);
+		// } catch (Exception e) {
+		// System.out.println(e);
+		// System.out.println(e.getCause());
+		// Assert.fail("sending tx failed");
+		// }
+		//
+		// String failedTx =
+		// "0100000001279b60531d56b5403340edf41e5c866b005711c6f1c865476ea22bab4018008f010000006a473044022030677277e6e99e6dfe19df89411ebcc5d2fca4bd53a2873fac45b70be469034402203acb73750307258af3a4ca77a4d1ec0798415e1eeaa0df172bdbae1ee3555bc5012102e7185cfb5970912f40d0c24d0c1a15bc6ee03b129378852d59cfc278fe12b185ffffffff020000000000000000246a2253312cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b98244027c901000000001976a914c698f4239a60ff16b29a575405178eb12d3e04bf88ac00000000";
+		// System.out.println(CoinStackClient.getTransactionHash(failedTx));
+		// try {
+		// coinStackClient.sendTransaction(failedTx);
+		// } catch (Exception e) {
+		// System.out.println(e);
+		// System.out.println(e.getCause());
+		// Assert.fail("sending tx failed");
+		// }
 	}
 
 	@Test
@@ -181,31 +207,34 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		assertEquals(subscriptionId, subscriptions[0].getId());
 	}
 
-//	@Test
-//	public void testBuildTransaction() throws Exception {
-//		String privateKeyWIF = "5J82YdoYrtE3YGxjFW9Rr3R21qtDH9gFwkphHtnMpijcHs2PH7M";
-//		String to = "357UeWvhR2xK9hUEdVnrxf1Kkbf6B1wLGT";
-//
-//		// String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
-//		long amount = Math.convertToSatoshi("0.0002");
-//		long fee = Math.convertToSatoshi("0.0001");
-//		TransactionBuilder builder = new TransactionBuilder();
-//		builder.addOutput(to, amount);
-//		builder.setFee(fee);
-//
-//		String signedTx = coinStackClient.createSignedTransaction(builder, privateKeyWIF);
-//		System.out.println(signedTx);
-//		assertNotNull(signedTx);
-//
-//		TransactionBuilder dataTx = new TransactionBuilder();
-//		dataTx.setData("hello world".getBytes());
-//		dataTx.setFee(fee);
-//
-//		String signedDataTx = coinStackClient.createSignedTransaction(dataTx, privateKeyWIF);
-//		System.out.println(signedDataTx);
-//		assertNotNull(signedDataTx);
-//		coinStackClient.sendTransaction(signedTx);
-//	}
+	// @Test
+	// public void testBuildTransaction() throws Exception {
+	// String privateKeyWIF =
+	// "5J82YdoYrtE3YGxjFW9Rr3R21qtDH9gFwkphHtnMpijcHs2PH7M";
+	// String to = "357UeWvhR2xK9hUEdVnrxf1Kkbf6B1wLGT";
+	//
+	// // String to = "3L5qhqsAqzdzzTziDMrUonAFxZMiA3HsqL";
+	// long amount = Math.convertToSatoshi("0.0002");
+	// long fee = Math.convertToSatoshi("0.0001");
+	// TransactionBuilder builder = new TransactionBuilder();
+	// builder.addOutput(to, amount);
+	// builder.setFee(fee);
+	//
+	// String signedTx = coinStackClient.createSignedTransaction(builder,
+	// privateKeyWIF);
+	// System.out.println(signedTx);
+	// assertNotNull(signedTx);
+	//
+	// TransactionBuilder dataTx = new TransactionBuilder();
+	// dataTx.setData("hello world".getBytes());
+	// dataTx.setFee(fee);
+	//
+	// String signedDataTx = coinStackClient.createSignedTransaction(dataTx,
+	// privateKeyWIF);
+	// System.out.println(signedDataTx);
+	// assertNotNull(signedDataTx);
+	// coinStackClient.sendTransaction(signedTx);
+	// }
 
 	@Test
 	public void testMultiSigTransaction() throws Exception {
@@ -262,14 +291,15 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 	public void testDocumentStamping() throws Exception {
 		String message = "Hello, world";
 		Sha256Hash hash = Sha256Hash.create(message.getBytes());
-//		String stampid = coinStackClient.stampDocument(Hex.encodeHexString(hash.getBytes()));
-//		System.out.println(stampid);
-//		assertNotNull(stampid);
-		
+		// String stampid =
+		// coinStackClient.stampDocument(Hex.encodeHexString(hash.getBytes()));
+		// System.out.println(stampid);
+		// assertNotNull(stampid);
+
 		// fetch stamp
 		Stamp stamp = coinStackClient.getStamp("f0276c7a47b83e9af575047dc4674237772e4d1ea2c7db9aeb1e3e2f049b28b8-0");
 		assertNotNull(stamp.getTimestamp());
 		assertNotNull(stamp.getTxId());
-//		System.out.println(stamp);
+		// System.out.println(stamp);
 	}
 }
