@@ -76,6 +76,17 @@ public class ECKey {
 		return deriveAddress(privateKeyWIF, true);
 	}
 
+	/**
+	 * Get address associated with given private key
+	 * 
+	 * @param privateKeyWIF
+	 *            private key in Wallet Import Format
+	 * @param isMainNet
+	 *            true is Mainnet, false is Testnet
+	 * @return the address associated with the private key given
+	 * @throws MalformedInputException
+	 *             in case the private key is in incorrect format
+	 */
 	public static String deriveAddress(String privateKeyWIF, boolean isMainNet) throws MalformedInputException {
 		org.bitcoinj.core.ECKey signingKey;
 		NetworkParameters network = isMainNet ? MainNetParams.get() : RegTestParams.get();
@@ -86,11 +97,31 @@ public class ECKey {
 		}
 		return signingKey.toAddress(network).toString();
 	}
-
+	
+	/**
+	 * Get public key associated with given private key
+	 * 
+	 * @param privateKeyWIF
+	 *            private key in Wallet Import Format
+	 * @return the address associated with the private key given
+	 * @throws MalformedInputException
+	 *             in case the private key is in incorrect format
+	 */
 	public static byte[] derivePubKey(String privateKeyWIF) throws MalformedInputException {
 		return derivePubKey(privateKeyWIF, true);
 	}
 
+	/**
+	 * Get public key associated with given private key
+	 * 
+	 * @param privateKeyWIF
+	 *            private key in Wallet Import Format
+	 * @param isMainNet
+	 *            true is Mainnet, false is Testnet
+	 * @return the address associated with the private key given
+	 * @throws MalformedInputException
+	 *             in case the private key is in incorrect format
+	 */
 	public static byte[] derivePubKey(String privateKeyWIF, boolean isMainNet) throws MalformedInputException {
 		org.bitcoinj.core.ECKey signingKey;
 		NetworkParameters network = isMainNet ? MainNetParams.get() : RegTestParams.get();
