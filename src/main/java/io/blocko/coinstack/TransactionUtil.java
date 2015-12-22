@@ -21,6 +21,15 @@ public class TransactionUtil {
 		return TransactionUtil.parseRawTransaction(rawTransaction, true);
 	}
 
+	/**
+	 * parse raw transaction and return transaction object
+	 * 
+	 * @param rawTransaction
+	 *            transaction in hex-encoded string format
+	 * @param isMainNet
+	 *            MainNet is true, TestNet is false
+	 * @return a transaction object representing the given raw transaction
+	 */
 	public static Transaction parseRawTransaction(String rawTransaction, boolean isMainNet) {
 		org.bitcoinj.core.Transaction tx = new org.bitcoinj.core.Transaction(
 				isMainNet ? MainNetParams.get() : RegTestParams.get(),

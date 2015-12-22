@@ -37,6 +37,10 @@ public class TransactionBuilder {
 		outputs.add(new Output("", 0, destinationAddress, false, amount, null));
 	}
 
+	/**
+	 * If output valus is less than 546 satoshis, it is dusty output
+	 * If allowDustyOutput is true, this small value is accepted by client
+	 */
 	public void allowDustyOutput(boolean allowDustyOutput) {
 		this.allowDustyOutput = allowDustyOutput;
 	}
@@ -92,11 +96,21 @@ public class TransactionBuilder {
 		}
 		this.fee = fee;
 	}
-
+	
+	/**
+	 * return shuffleOutputs boolean
+	 */
 	public boolean shuffleOutputs() {
 		return shuffleOutputs;
 	}
 
+	/**
+	 * Set option whether to shuffle order of outputs or not
+	 * 
+	 * @param shuffleOutputs
+	 *            true is enabling shuffle, false is disable
+	 *            
+	 */
 	public void shuffleOutputs(boolean shuffleOutputs) {
 		this.shuffleOutputs = shuffleOutputs;
 	}
