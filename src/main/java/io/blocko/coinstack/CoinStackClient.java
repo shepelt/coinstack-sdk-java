@@ -175,7 +175,7 @@ public class CoinStackClient {
 	 *            endpoint to connect to (available: EndPoint.MAINNET,
 	 *            EndPoint.TESTNET)
 	 */
-	public CoinStackClient(CredentialsProvider provider, Endpoint endpoint) {
+	public CoinStackClient(CredentialsProvider provider, AbstractEndpoint endpoint) {
 		this.coinStackAdaptor = new CoreBackEndAdaptor(provider, endpoint);
 		coinStackAdaptor.init();
 

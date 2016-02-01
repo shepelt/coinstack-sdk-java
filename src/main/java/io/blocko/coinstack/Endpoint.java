@@ -6,7 +6,7 @@ import java.security.PublicKey;
 
 import io.blocko.coinstack.util.CertificatePinningManager;
 
-public enum Endpoint {
+public enum Endpoint implements AbstractEndpoint {
 	MAINNET() {
 		@Override
 		public String endpoint() {
@@ -39,10 +39,6 @@ public enum Endpoint {
 	protected void setPublicKey(PublicKey key) {
 		this.key = key;
 	}
-
-	public abstract String endpoint();
-
-	public abstract boolean mainnet();
 
 	private static boolean initialized = false;
 

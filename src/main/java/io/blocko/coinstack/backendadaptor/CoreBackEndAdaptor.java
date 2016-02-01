@@ -32,6 +32,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import io.blocko.coinstack.AbstractEndpoint;
 import io.blocko.coinstack.Endpoint;
 import io.blocko.coinstack.exception.AuthSignException;
 import io.blocko.coinstack.exception.CoinStackException;
@@ -52,18 +53,18 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	private static final String[] defaultProtocols = new String[] { "TLSv1" };
 	private static final String[] defaultCipherSuites = new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" };
 	private CloseableHttpClient httpClient;
-	private Endpoint endpoint;
+	private AbstractEndpoint endpoint;
 	private String[] protocols;
 
 	private String[] cipherSuites;
 
 	private CredentialsProvider credentialProvider;
 
-	public CoreBackEndAdaptor(CredentialsProvider credentialsProvider, Endpoint endpoint) {
+	public CoreBackEndAdaptor(CredentialsProvider credentialsProvider, AbstractEndpoint endpoint) {
 		this(credentialsProvider, endpoint, defaultProtocols, defaultCipherSuites);
 	}
 
-	public CoreBackEndAdaptor(CredentialsProvider provider, Endpoint endpoint, String[] protocols,
+	public CoreBackEndAdaptor(CredentialsProvider provider, AbstractEndpoint endpoint, String[] protocols,
 			String[] cipherSuites) {
 		super();
 		this.credentialProvider = provider;

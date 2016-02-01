@@ -10,12 +10,12 @@ import javax.net.ssl.SSLSocket;
 
 import org.apache.http.conn.ssl.X509HostnameVerifier;
 
-import io.blocko.coinstack.Endpoint;
+import io.blocko.coinstack.AbstractEndpoint;
 
 public class PublicKeyVerifier implements X509HostnameVerifier {
-	private Endpoint endpoint;
+	private AbstractEndpoint endpoint;
 
-	public PublicKeyVerifier(Endpoint endpoint) {
+	public PublicKeyVerifier(AbstractEndpoint endpoint) {
 		this.endpoint = endpoint;
 	}
 	@Override
@@ -35,6 +35,11 @@ public class PublicKeyVerifier implements X509HostnameVerifier {
 
 	@Override
 	public void verify(String host, SSLSocket ssl) throws IOException {
+		// if endpoint key null, skip cert pinning
+		if (endpoint.getPublicKey() == null) {
+			return;
+		}
+		
 		Certificate[] certificates = ssl.getSession().getPeerCertificates();
 		X509Certificate cert = (X509Certificate) certificates[0]; // get first certificate
 		if (endpoint.getPublicKey().equals(cert.getPublicKey())) {
