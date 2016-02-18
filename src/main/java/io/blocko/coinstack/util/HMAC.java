@@ -55,7 +55,7 @@ public class HMAC {
 		// set HMAC headers
 		StringBuffer authString = new StringBuffer();
 		authString = authString.append(request.getMethod()).append("\n"); // METHOD
-		authString = authString.append(request.getURI().getAuthority()).append(
+		authString = authString.append(request.getURI().getHost()).append(
 				"\n"); // HOST
 		authString = authString.append(request.getURI().getPath()).append("\n"); // SUBURL
 		authString = authString.append(timestamp).append("\n"); // timestamp

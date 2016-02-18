@@ -61,7 +61,8 @@ public class CoinStackClientWithProxyBackendTest extends CoinStackClientTest {
 			@Override
 			public String endpoint() {
 //				return "https://mainnet.cloudwallet.io";
-				return "https://54.169.11.17";
+//				return "https://54.169.11.17:443";
+				return "https://127.0.0.1:19091";
 			}
 		});
 	}
