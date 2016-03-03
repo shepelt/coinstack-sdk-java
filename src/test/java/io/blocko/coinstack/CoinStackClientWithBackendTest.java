@@ -31,10 +31,11 @@ import io.blocko.coinstack.model.Transaction;
  */
 public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 
+	private CoreBackEndAdaptor coreBackendAdaptor;
+
 	@Override
 	public void setUp() throws Exception {
-
-		coinStackClient = new CoinStackClient(new CoreBackEndAdaptor(new CredentialsProvider() {
+		this.coreBackendAdaptor = new CoreBackEndAdaptor(new CredentialsProvider() {
 
 			@Override
 			public String getAccessKey() {
@@ -46,7 +47,8 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 				return "843a557f883ecec603aab5377d5c2a";
 			}
 
-		}, Endpoint.MAINNET));
+		}, Endpoint.MAINNET);
+		coinStackClient = new CoinStackClient(coreBackendAdaptor);
 		// coinStackClient = new CoinStackClient();
 	}
 
@@ -190,18 +192,22 @@ public class CoinStackClientWithBackendTest extends CoinStackClientTest {
 		// list previous subscriptions
 		Subscription[] subscriptions = coinStackClient.listSubscriptions();
 		System.out.println("listing subscriptions");
+		System.out.println(this.coreBackendAdaptor.getLastRequestSignature());
 		for (Subscription subscription : subscriptions) {
 			System.out.println(subscription.getId());
 			coinStackClient.deleteSubscription(subscription.getId());
+			System.out.println(this.coreBackendAdaptor.getLastRequestSignature());
 		}
 		System.out.println("registering a new subscription");
 
 		Subscription newSubscription = new Subscription("1Gg95o3E89tmrLyUyZfq2xTLhetjNqy168", "3ee8dd5a6e");
 		String subscriptionId = coinStackClient.addSubscription(newSubscription);
 		assertNotNull(subscriptionId);
+		System.out.println(this.coreBackendAdaptor.getLastRequestSignature());
 
 		System.out.println("listing subscriptions");
 		subscriptions = coinStackClient.listSubscriptions();
+		System.out.println(this.coreBackendAdaptor.getLastRequestSignature());
 		assertEquals(1, subscriptions.length); // there should be only one
 												// subscription
 		assertEquals(subscriptionId, subscriptions[0].getId());

@@ -1,14 +1,17 @@
 package io.blocko.coinstack.backendadaptor;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.crypto.Mac;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -59,6 +62,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	private String[] cipherSuites;
 
 	private CredentialsProvider credentialProvider;
+	private String requestSignature = null;
 
 	public CoreBackEndAdaptor(CredentialsProvider credentialsProvider, AbstractEndpoint endpoint) {
 		this(credentialsProvider, endpoint, defaultProtocols, defaultCipherSuites);
@@ -71,6 +75,10 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		this.endpoint = endpoint;
 		this.protocols = protocols;
 		this.cipherSuites = cipherSuites;
+	}
+	
+	public String getLastRequestSignature() {
+		return this.requestSignature;
 	}
 
 	private CoinStackException processError(String resJsonString, int status) throws InvalidResponseException {
@@ -500,12 +508,33 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		}
 	}
 
+	private void fetchRequestSignature(HttpRequestBase req) {
+		this.requestSignature = null; // reset signature
+		Header[] headers = req.getHeaders("Authorization");
+		System.out.println(headers.length);
+		System.out.println(headers[0].getValue());
+		if (headers.length > 0) {
+			try {
+				MessageDigest sh = MessageDigest.getInstance("SHA-256"); 
+				String authHeader = headers[0].getValue();
+				sh.update(authHeader.getBytes("UTF-8"));
+				String result = new String(Base64.encodeBase64(sh.digest()));
+				this.requestSignature = result;
+			} catch (NoSuchAlgorithmException e) {
+				// do nothing
+			} catch (UnsupportedEncodingException e) {
+				// do nothing
+			}
+		}
+	}
+	
 	private void signPostRequest(HttpPost req, byte[] content) throws CoinStackException {
 		try {
 			String md5 = calculateMD5(content);
 			req.addHeader(HMAC.CONTENT_MD5, md5);
 			HMAC.signRequest(req, this.credentialProvider.getAccessKey(), this.credentialProvider.getSecretKey(),
 					HMAC.generateTimestamp());
+			fetchRequestSignature(req);
 		} catch (HMACSigningException e) {
 			throw new AuthSignException("Failed to sign auth header", "failed to generate HMAC");
 		} catch (NoSuchAlgorithmException e) {
@@ -524,6 +553,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		try {
 			HMAC.signRequest(req, this.credentialProvider.getAccessKey(), this.credentialProvider.getSecretKey(),
 					HMAC.generateTimestamp());
+			fetchRequestSignature(req);
 		} catch (HMACSigningException e) {
 			throw new AuthSignException("Failed to sign auth header", "failed to generate HMAC");
 		}
