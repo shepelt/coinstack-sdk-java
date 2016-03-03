@@ -310,6 +310,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 			try {
 				String[] blockIds;
+				int[] blockHeights;
 				Input[] inputs;
 				Output[] outputs;
 
@@ -319,6 +320,11 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				blockIds = new String[transactionBlockId.length()];
 				for (int i = 0; i < transactionBlockId.length(); i++) {
 					blockIds[i] = transactionBlockId.getJSONObject(i).getString("block_hash");
+				}
+				
+				blockHeights = new int[transactionBlockId.length()];
+				for (int i = 0; i < transactionBlockId.length(); i++) {
+					blockHeights[i] = transactionBlockId.getJSONObject(i).getInt("block_height");
 				}
 
 				JSONArray transactionInputs = resJson.getJSONArray("inputs");
@@ -347,9 +353,11 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 				}
 
-				return new Transaction(resJson.getString("transaction_hash"), blockIds,
+				Transaction tx = new Transaction(resJson.getString("transaction_hash"), blockIds,
 						DateTime.parse(resJson.getString("time")).toDate(), resJson.getBoolean("coinbase"), inputs,
 						outputs);
+				tx.setBlockHeights(blockHeights);
+				return tx;
 			} catch (JSONException e) {
 				throw new InvalidResponseException("Invalid transaction response", "Parsing response failed");
 			}

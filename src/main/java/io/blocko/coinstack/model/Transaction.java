@@ -16,6 +16,7 @@ public class Transaction {
 	private Input[] inputs;
 	private boolean isCoinbase;
 	private Output[] outputs;
+	private int[] blockHeights;
 
 	public Transaction(String id, String[] blockIds, Date confirmationTime,
 			boolean isCoinbase, Input[] inputs, Output[] outputs) {
@@ -27,8 +28,16 @@ public class Transaction {
 		this.outputs = outputs;
 	}
 
+	public int[] getBlockHeights() {
+		return blockHeights;
+	}
+
 	public String[] getBlockIds() {
 		return blockIds;
+	}
+
+	public Date getConfirmationTime() {
+		return confirmationTime;
 	}
 
 	public String getId() {
@@ -47,7 +56,7 @@ public class Transaction {
 		return isCoinbase;
 	}
 
-	public Date getConfirmationTime() {
-		return confirmationTime;
+	public void setBlockHeights(int[] blockHeights) {
+		this.blockHeights = blockHeights;
 	}
 }
