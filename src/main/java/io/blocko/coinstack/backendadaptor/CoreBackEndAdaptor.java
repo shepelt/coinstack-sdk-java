@@ -519,8 +519,6 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	private void fetchRequestSignature(HttpRequestBase req) {
 		this.requestSignature = null; // reset signature
 		Header[] headers = req.getHeaders("Authorization");
-		System.out.println(headers.length);
-		System.out.println(headers[0].getValue());
 		if (headers.length > 0) {
 			try {
 				MessageDigest sh = MessageDigest.getInstance("SHA-256"); 
