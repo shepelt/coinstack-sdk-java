@@ -161,7 +161,7 @@ public class CoinStackClient {
 		this.network = MainNetParams.get();
 	}
 
-	protected CoinStackClient(AbstractCoinStackAdaptor coinStackAdaptor) {
+	public CoinStackClient(AbstractCoinStackAdaptor coinStackAdaptor) {
 		this.coinStackAdaptor = coinStackAdaptor;
 		coinStackAdaptor.init();
 		network = coinStackAdaptor.isMainnet() ? MainNetParams.get() : RegTestParams.get();
