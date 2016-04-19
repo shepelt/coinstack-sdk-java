@@ -52,7 +52,8 @@ public class MultiSig {
 	 *            true is Mainnet, false is Testnet
 	 * @return Bitcoin address   	           
 	 */
-	protected static String createAddressFromRedeemScript(Script redeemScript, boolean isMainNet) {
+	
+	public static String createAddressFromRedeemScript(Script redeemScript, boolean isMainNet) {
 		Script sc = ScriptBuilder.createP2SHOutputScript(redeemScript);
 		Address address = Address.fromP2SHScript(isMainNet ? MainNetParams.get() : RegTestParams.get(), sc);
 		return address.toString();

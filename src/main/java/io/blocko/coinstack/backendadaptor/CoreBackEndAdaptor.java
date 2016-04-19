@@ -1,5 +1,23 @@
 package io.blocko.coinstack.backendadaptor;
 
+import io.blocko.coinstack.AbstractEndpoint;
+import io.blocko.coinstack.exception.AuthSignException;
+import io.blocko.coinstack.exception.CoinStackException;
+import io.blocko.coinstack.exception.InvalidResponseException;
+import io.blocko.coinstack.exception.MalformedInputException;
+import io.blocko.coinstack.model.Block;
+import io.blocko.coinstack.model.CredentialsProvider;
+import io.blocko.coinstack.model.Input;
+import io.blocko.coinstack.model.Output;
+import io.blocko.coinstack.model.Output.MetaData;
+import io.blocko.coinstack.model.Stamp;
+import io.blocko.coinstack.model.Subscription;
+import io.blocko.coinstack.model.Transaction;
+import io.blocko.coinstack.openassets.model.AssetOutput;
+import io.blocko.coinstack.util.HMAC;
+import io.blocko.coinstack.util.HMAC.HMACSigningException;
+import io.blocko.coinstack.util.PublicKeyVerifier;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
@@ -7,7 +25,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.crypto.Mac;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.codec.binary.Base64;
@@ -35,23 +52,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import io.blocko.coinstack.AbstractEndpoint;
-import io.blocko.coinstack.Endpoint;
-import io.blocko.coinstack.exception.AuthSignException;
-import io.blocko.coinstack.exception.CoinStackException;
-import io.blocko.coinstack.exception.InvalidResponseException;
-import io.blocko.coinstack.exception.MalformedInputException;
-import io.blocko.coinstack.model.Block;
-import io.blocko.coinstack.model.CredentialsProvider;
-import io.blocko.coinstack.model.Input;
-import io.blocko.coinstack.model.Output;
-import io.blocko.coinstack.model.Stamp;
-import io.blocko.coinstack.model.Subscription;
-import io.blocko.coinstack.model.Transaction;
-import io.blocko.coinstack.util.HMAC;
-import io.blocko.coinstack.util.HMAC.HMACSigningException;
-import io.blocko.coinstack.util.PublicKeyVerifier;
-
 public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	private static final String[] defaultProtocols = new String[] { "TLSv1" };
 	private static final String[] defaultCipherSuites = new String[] { "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" };
@@ -64,29 +64,33 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	private CredentialsProvider credentialProvider;
 	private String requestSignature = null;
 
-	public CoreBackEndAdaptor(CredentialsProvider credentialsProvider, AbstractEndpoint endpoint) {
-		this(credentialsProvider, endpoint, defaultProtocols, defaultCipherSuites);
+	public CoreBackEndAdaptor(CredentialsProvider credentialsProvider,
+			AbstractEndpoint endpoint) {
+		this(credentialsProvider, endpoint, defaultProtocols,
+				defaultCipherSuites);
 	}
 
-	public CoreBackEndAdaptor(CredentialsProvider provider, AbstractEndpoint endpoint, String[] protocols,
-			String[] cipherSuites) {
+	public CoreBackEndAdaptor(CredentialsProvider provider,
+			AbstractEndpoint endpoint, String[] protocols, String[] cipherSuites) {
 		super();
 		this.credentialProvider = provider;
 		this.endpoint = endpoint;
 		this.protocols = protocols;
 		this.cipherSuites = cipherSuites;
 	}
-	
+
 	public String getLastRequestSignature() {
 		return this.requestSignature;
 	}
 
-	private CoinStackException processError(String resJsonString, int status) throws InvalidResponseException {
+	private CoinStackException processError(String resJsonString, int status)
+			throws InvalidResponseException {
 		JSONObject resJson = null;
 		try {
 			resJson = new JSONObject(resJsonString);
 		} catch (JSONException e) {
-			throw new InvalidResponseException("Invalid server response", "failed to parse error information");
+			throw new InvalidResponseException("Invalid server response",
+					"failed to parse error information");
 		}
 
 		CoinStackException exception;
@@ -95,24 +99,30 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			if (resJson.has("error_cause")) {
 				cause = resJson.getString("error_cause");
 			}
-			exception = new CoinStackException(resJson.getString("error_type"), resJson.getInt("error_code"), status,
-					resJson.getString("error_message"), resJson.getBoolean("retry"), cause);
+			exception = new CoinStackException(resJson.getString("error_type"),
+					resJson.getInt("error_code"), status,
+					resJson.getString("error_message"),
+					resJson.getBoolean("retry"), cause);
 		} catch (JSONException e) {
-			throw new InvalidResponseException("Invalid server response", "failed to parse error information");
+			throw new InvalidResponseException("Invalid server response",
+					"failed to parse error information");
 		}
 		return exception;
 	}
 
 	@Override
-	public String addSubscription(Subscription newSubscription) throws IOException, CoinStackException {
+	public String addSubscription(Subscription newSubscription)
+			throws IOException, CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpPost httpPost = new HttpPost(this.endpoint.endpoint() + "/subscriptions");
+			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
+					+ "/subscriptions");
 			byte[] payload;
 			try {
 				payload = newSubscription.toJsonString().getBytes("UTF8");
 			} catch (JSONException e) {
-				throw new MalformedInputException("Invalid subscription", "failed to marshal subscription object");
+				throw new MalformedInputException("Invalid subscription",
+						"failed to marshal subscription object");
 			}
 			httpPost.setEntity(new ByteArrayEntity(payload));
 			signPostRequest(httpPost, payload);
@@ -131,7 +141,9 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				resJson = new JSONObject(resJsonString);
 				return resJson.getString("id");
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid add subscription response", "Parsing response failed");
+				throw new InvalidResponseException(
+						"Invalid add subscription response",
+						"Parsing response failed");
 			}
 		} finally {
 			if (null != res)
@@ -140,10 +152,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public void deleteSubscription(String id) throws IOException, CoinStackException {
+	public void deleteSubscription(String id) throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpDelete httpDelete = new HttpDelete(this.endpoint.endpoint() + "/subscriptions/" + id);
+			HttpDelete httpDelete = new HttpDelete(this.endpoint.endpoint()
+					+ "/subscriptions/" + id);
 			signRequest(httpDelete);
 			res = httpClient.execute(httpDelete);
 
@@ -167,10 +181,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public long getBalance(String address) throws IOException, CoinStackException {
+	public long getBalance(String address) throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/balance");
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
+					+ "/addresses/" + address + "/balance");
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
 
@@ -186,7 +202,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				resJson = new JSONObject(resJsonString);
 				return resJson.getLong("balance");
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid balance response", "Parsing response failed");
+				throw new InvalidResponseException("Invalid balance response",
+						"Parsing response failed");
 			}
 		} finally {
 			if (null != res)
@@ -199,7 +216,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	public String getBestBlockHash() throws IOException, CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
+					+ "/blockchain");
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
 
@@ -215,7 +233,9 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				resJson = new JSONObject(resJsonString);
 				return resJson.getString("best_block_hash");
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid blockchain status response", "Parsing response failed");
+				throw new InvalidResponseException(
+						"Invalid blockchain status response",
+						"Parsing response failed");
 			}
 		} finally {
 			if (null != res)
@@ -227,7 +247,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	public int getBestHeight() throws IOException, CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blockchain");
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
+					+ "/blockchain");
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
 
@@ -242,7 +263,9 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				JSONObject resJson = new JSONObject(resJsonString);
 				return resJson.getInt("best_height");
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid blockchain status response", "Parsing response failed");
+				throw new InvalidResponseException(
+						"Invalid blockchain status response",
+						"Parsing response failed");
 			}
 		} finally {
 			if (null != res)
@@ -251,10 +274,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public Block getBlock(String blockId) throws IOException, CoinStackException {
+	public Block getBlock(String blockId) throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blocks/" + blockId);
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/blocks/"
+					+ blockId);
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
 
@@ -280,11 +305,14 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				} else {
 					parentId = resJson.getString("parent");
 				}
-				return new Block(DateTime.parse(resJson.getString("confirmation_time")).toDate(),
-						resJson.getString("block_hash"), new String[] { resJson.getJSONArray("children").getString(0) },
+				return new Block(DateTime.parse(
+						resJson.getString("confirmation_time")).toDate(),
+						resJson.getString("block_hash"), new String[] { resJson
+								.getJSONArray("children").getString(0) },
 						resJson.getInt("height"), parentId, txIds);
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid server response", "failed to parse block information");
+				throw new InvalidResponseException("Invalid server response",
+						"failed to parse block information");
 			}
 		} finally {
 			if (null != res)
@@ -293,10 +321,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public Transaction getTransaction(String transactionId) throws IOException, CoinStackException {
+	public Transaction getTransaction(String transactionId) throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/transactions/" + transactionId);
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
+					+ "/transactions/" + transactionId);
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
 
@@ -316,50 +346,63 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 				JSONObject resJson = new JSONObject(resJsonString);
 
-				JSONArray transactionBlockId = resJson.getJSONArray("block_hash");
+				JSONArray transactionBlockId = resJson
+						.getJSONArray("block_hash");
 				blockIds = new String[transactionBlockId.length()];
 				for (int i = 0; i < transactionBlockId.length(); i++) {
-					blockIds[i] = transactionBlockId.getJSONObject(i).getString("block_hash");
+					blockIds[i] = transactionBlockId.getJSONObject(i)
+							.getString("block_hash");
 				}
-				
+
 				blockHeights = new int[transactionBlockId.length()];
 				for (int i = 0; i < transactionBlockId.length(); i++) {
-					blockHeights[i] = transactionBlockId.getJSONObject(i).getInt("block_height");
+					blockHeights[i] = transactionBlockId.getJSONObject(i)
+							.getInt("block_height");
 				}
 
 				JSONArray transactionInputs = resJson.getJSONArray("inputs");
 				inputs = new Input[transactionInputs.length()];
 				for (int i = 0; i < transactionInputs.length(); i++) {
-					inputs[i] = new Input(transactionInputs.getJSONObject(i).getInt("output_index"),
-							transactionInputs.getJSONObject(i).getJSONArray("address").getString(0),
-							transactionInputs.getJSONObject(i).getString("transaction_hash"),
-							transactionInputs.getJSONObject(i).getLong("value"));
+					inputs[i] = new Input(transactionInputs.getJSONObject(i)
+							.getInt("output_index"), transactionInputs
+							.getJSONObject(i).getJSONArray("address")
+							.getString(0), transactionInputs.getJSONObject(i)
+							.getString("transaction_hash"), transactionInputs
+							.getJSONObject(i).getLong("value"));
 
 				}
 
 				JSONArray transactionOutputs = resJson.getJSONArray("outputs");
 				outputs = new Output[transactionOutputs.length()];
 				for (int i = 0; i < transactionOutputs.length(); i++) {
-					JSONObject transactionOutput = transactionOutputs.getJSONObject(i);
+					JSONObject transactionOutput = transactionOutputs
+							.getJSONObject(i);
 					if (transactionOutput.has("address")) {
 						outputs[i] = new Output(transactionId, i,
-								transactionOutput.getJSONArray("address").getString(0),
-								transactionOutput.getBoolean("used"), transactionOutput.getLong("value"),
+								transactionOutput.getJSONArray("address")
+										.getString(0),
+								transactionOutput.getBoolean("used"),
+								transactionOutput.getLong("value"),
 								transactionOutput.getString("script"));
 					} else {
-						outputs[i] = new Output(transactionId, i, null, transactionOutput.getBoolean("used"),
-								transactionOutput.getLong("value"), transactionOutput.getString("script"));
+						outputs[i] = new Output(transactionId, i, null,
+								transactionOutput.getBoolean("used"),
+								transactionOutput.getLong("value"),
+								transactionOutput.getString("script"));
 					}
 
 				}
 
-				Transaction tx = new Transaction(resJson.getString("transaction_hash"), blockIds,
-						DateTime.parse(resJson.getString("time")).toDate(), resJson.getBoolean("coinbase"), inputs,
-						outputs);
+				Transaction tx = new Transaction(
+						resJson.getString("transaction_hash"), blockIds,
+						DateTime.parse(resJson.getString("time")).toDate(),
+						resJson.getBoolean("coinbase"), inputs, outputs);
 				tx.setBlockHeights(blockHeights);
 				return tx;
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid transaction response", "Parsing response failed");
+				throw new InvalidResponseException(
+						"Invalid transaction response",
+						"Parsing response failed");
 			}
 		} finally {
 			if (null != res)
@@ -368,10 +411,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public String[] getTransactions(String address) throws IOException, CoinStackException {
+	public String[] getTransactions(String address) throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/history");
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
+					+ "/addresses/" + address + "/history");
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
 
@@ -390,7 +435,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 					transactions.add(resJson.getString(i));
 				}
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid server response", "failed to parse address history");
+				throw new InvalidResponseException("Invalid server response",
+						"failed to parse address history");
 			}
 			return transactions.toArray(new String[0]);
 		} finally {
@@ -400,10 +446,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public Output[] getUnspentOutputs(String address) throws IOException, CoinStackException {
+	public Output[] getUnspentOutputs(String address) throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/addresses/" + address + "/unspentoutputs");
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
+					+ "/addresses/" + address + "/unspentoutputs");
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
 
@@ -420,8 +468,28 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				JSONArray resJson = new JSONArray(resJsonString);
 				for (int i = 0; i < resJson.length(); i++) {
 					JSONObject output = resJson.getJSONObject(i);
-					outputs.add(new Output(output.getString("transaction_hash"), output.getInt("index"), address, false,
-							output.getLong("value"), output.getString("script")));
+					// System.out.println(output.toString());
+					MetaData metadata = null;
+					if (!output.isNull("metadata")) {
+						JSONObject metadataJson1 = output
+								.getJSONObject("metadata");
+						if (!metadataJson1.isNull("openassets")) {
+							JSONObject metadataJson = metadataJson1
+									.getJSONObject("openassets");
+							if (!metadataJson.getString("output_type").equals(
+									"UNCOLORED")) {
+								metadata = new MetaData(
+										metadataJson.getString("output_type"),
+										metadataJson.getString("asset_id"),
+										metadataJson.getLong("quantity"));
+							}
+						}
+					}
+					outputs.add(new Output(
+							output.getString("transaction_hash"), output
+									.getInt("index"), address, false, output
+									.getLong("value"), output
+									.getString("script"), metadata));
 				}
 			} catch (JSONException e) {
 				throw new InvalidResponseException("Invalid server response",
@@ -437,14 +505,18 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	@Override
 	public void init() {
 		// initialize public key verifier
-		PublicKeyVerifier hostnameVerifier = new PublicKeyVerifier(this.endpoint);
+		PublicKeyVerifier hostnameVerifier = new PublicKeyVerifier(
+				this.endpoint);
 		SSLContext context = SSLContexts.createDefault();
-		SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(context, protocols,
-				cipherSuites, hostnameVerifier);
+		SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(
+				context, protocols, cipherSuites, hostnameVerifier);
 		ConnectionSocketFactory plainConnectionSocketFactory = new PlainConnectionSocketFactory();
-		Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory> create()
-				.register("https", sslConnectionFactory).register("http", plainConnectionSocketFactory).build();
-		PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(registry);
+		Registry<ConnectionSocketFactory> registry = RegistryBuilder
+				.<ConnectionSocketFactory> create()
+				.register("https", sslConnectionFactory)
+				.register("http", plainConnectionSocketFactory).build();
+		PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(
+				registry);
 		HttpClientBuilder builder = HttpClientBuilder.create();
 		builder.setConnectionManager(connManager);
 		httpClient = builder.build();
@@ -456,10 +528,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public Subscription[] listSubscriptions() throws IOException, CoinStackException {
+	public Subscription[] listSubscriptions() throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/subscriptions");
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint()
+					+ "/subscriptions");
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
 
@@ -471,8 +545,10 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				JSONArray resJson = new JSONArray(resJsonString);
 				for (int i = 0; i < resJson.length(); i++) {
 					JSONObject subscription = resJson.getJSONObject(i);
-					subscriptions.add(new Subscription(subscription.getString("id"), subscription.getString("address"),
-							subscription.getString("action")));
+					subscriptions.add(new Subscription(subscription
+							.getString("id"),
+							subscription.getString("address"), subscription
+									.getString("action")));
 
 				}
 			} catch (JSONException e) {
@@ -487,15 +563,18 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public void sendTransaction(String rawTransaction) throws IOException, CoinStackException {
+	public void sendTransaction(String rawTransaction) throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpPost httpPost = new HttpPost(this.endpoint.endpoint() + "/transactions");
+			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
+					+ "/transactions");
 			JSONObject txRequest = new JSONObject();
 			try {
 				txRequest.put("tx", rawTransaction);
 			} catch (JSONException e) {
-				throw new MalformedInputException("Invalid subscription", "failed to marshal subscription object");
+				throw new MalformedInputException("Invalid subscription",
+						"failed to marshal subscription object");
 			}
 			byte[] payload = txRequest.toString().getBytes("UTF8");
 			httpPost.setEntity(new ByteArrayEntity(payload));
@@ -521,7 +600,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		Header[] headers = req.getHeaders("Authorization");
 		if (headers.length > 0) {
 			try {
-				MessageDigest sh = MessageDigest.getInstance("SHA-256"); 
+				MessageDigest sh = MessageDigest.getInstance("SHA-256");
 				String authHeader = headers[0].getValue();
 				sh.update(authHeader.getBytes("UTF-8"));
 				String result = new String(Base64.encodeBase64(sh.digest()));
@@ -533,22 +612,27 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			}
 		}
 	}
-	
-	private void signPostRequest(HttpPost req, byte[] content) throws CoinStackException {
+
+	private void signPostRequest(HttpPost req, byte[] content)
+			throws CoinStackException {
 		try {
 			String md5 = calculateMD5(content);
 			req.addHeader(HMAC.CONTENT_MD5, md5);
-			HMAC.signRequest(req, this.credentialProvider.getAccessKey(), this.credentialProvider.getSecretKey(),
+			HMAC.signRequest(req, this.credentialProvider.getAccessKey(),
+					this.credentialProvider.getSecretKey(),
 					HMAC.generateTimestamp());
 			fetchRequestSignature(req);
 		} catch (HMACSigningException e) {
-			throw new AuthSignException("Failed to sign auth header", "failed to generate HMAC");
+			throw new AuthSignException("Failed to sign auth header",
+					"failed to generate HMAC");
 		} catch (NoSuchAlgorithmException e) {
-			throw new AuthSignException("Failed to calculate MD5 header", "algorithm not found");
+			throw new AuthSignException("Failed to calculate MD5 header",
+					"algorithm not found");
 		}
 	}
 
-	private String calculateMD5(byte[] contentToEncode) throws NoSuchAlgorithmException {
+	private String calculateMD5(byte[] contentToEncode)
+			throws NoSuchAlgorithmException {
 		MessageDigest digest = MessageDigest.getInstance("MD5");
 		digest.update(contentToEncode);
 		String result = new String(Base64.encodeBase64(digest.digest()));
@@ -557,24 +641,29 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 	private void signRequest(HttpRequestBase req) throws CoinStackException {
 		try {
-			HMAC.signRequest(req, this.credentialProvider.getAccessKey(), this.credentialProvider.getSecretKey(),
+			HMAC.signRequest(req, this.credentialProvider.getAccessKey(),
+					this.credentialProvider.getSecretKey(),
 					HMAC.generateTimestamp());
 			fetchRequestSignature(req);
 		} catch (HMACSigningException e) {
-			throw new AuthSignException("Failed to sign auth header", "failed to generate HMAC");
+			throw new AuthSignException("Failed to sign auth header",
+					"failed to generate HMAC");
 		}
 	}
 
 	@Override
-	public String stampDocument(String hash) throws IOException, CoinStackException {
+	public String stampDocument(String hash) throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpPost httpPost = new HttpPost(this.endpoint.endpoint() + "/stamps");
+			HttpPost httpPost = new HttpPost(this.endpoint.endpoint()
+					+ "/stamps");
 			JSONObject txRequest = new JSONObject();
 			try {
 				txRequest.put("hash", hash);
 			} catch (JSONException e) {
-				throw new MalformedInputException("Invalid stamp request", "failed to marshal stamp request");
+				throw new MalformedInputException("Invalid stamp request",
+						"failed to marshal stamp request");
 			}
 			byte[] payload = txRequest.toString().getBytes("UTF8");
 			httpPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
@@ -598,7 +687,8 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 				resJson = new JSONObject(resJsonString);
 				return resJson.getString("stampid");
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid server response", "failed to parse stamp respnose");
+				throw new InvalidResponseException("Invalid server response",
+						"failed to parse stamp respnose");
 			}
 		} finally {
 			if (null != res)
@@ -607,10 +697,12 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 	}
 
 	@Override
-	public Stamp getStamp(String stampId) throws IOException, CoinStackException {
+	public Stamp getStamp(String stampId) throws IOException,
+			CoinStackException {
 		CloseableHttpResponse res = null;
 		try {
-			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/stamps/" + stampId);
+			HttpGet httpGet = new HttpGet(this.endpoint.endpoint() + "/stamps/"
+					+ stampId);
 			signRequest(httpGet);
 			res = httpClient.execute(httpGet);
 
@@ -624,15 +716,24 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 
 			try {
 				JSONObject resJson = new JSONObject(resJsonString);
-				return new Stamp(resJson.getString("tx"), resJson.getInt("vout"), resJson.getInt("confirmations"),
-						DateTime.parse(resJson.getString("timestamp")).toDate());
+				return new Stamp(resJson.getString("tx"),
+						resJson.getInt("vout"),
+						resJson.getInt("confirmations"), DateTime.parse(
+								resJson.getString("timestamp")).toDate());
 			} catch (JSONException e) {
-				throw new InvalidResponseException("Invalid stamp response", "Parsing response failed");
+				throw new InvalidResponseException("Invalid stamp response",
+						"Parsing response failed");
 			}
 		} finally {
 			if (null != res)
 				res.close();
 		}
+	}
+
+	public AssetOutput[] getUnspentAssetOutputs(String address)
+			throws IOException, CoinStackException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
