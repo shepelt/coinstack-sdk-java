@@ -18,6 +18,7 @@ import io.blocko.coinstack.model.Output;
 import io.blocko.coinstack.model.Stamp;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
+import io.blocko.coinstack.openassets.model.AssetOutput;
 
 /**
  * @author nepho
@@ -120,6 +121,30 @@ public class MockCoinStackAdaptor extends AbstractCoinStackAdaptor {
 						"76a9140acd296e1ba0b5153623c3c55f2d5b45b1a25ce988ac"));
 		unspentOutputDB.put("1z7Xp8ayc1HDnUhKiSsRz7ZVorxrRFUg6", outputList);
 	}
+	Map<String, List<AssetOutput>> unspentAssetOutputDB = new HashMap<String, List<AssetOutput>>();
+	{
+		List<AssetOutput> outputList = new ArrayList<AssetOutput>();
+		outputList
+				.add(new AssetOutput(
+						CoinStackClient.convertEndianness("048e913c1b1f7bdca558c26d7d9456a7fe2e2757a82536e70a06cf35ef907604"),
+						0, "144jCjBySWvqVv22Upkm6ez6zTVYZYwU9p", false,
+						600L,
+						"76a914219cda96533a2048068a5ffcee2dc3b70c84282088ac",
+						"AKJFoih7ioqPXAHgnDzJvHE8x2FMcFerfv",
+						1000l));
+		
+		outputList
+		.add(new AssetOutput(
+				CoinStackClient.convertEndianness("85a44f3f8e0f25d1a7112056341e9ff698cbf54b69ae363ad8bd480758aead16"),
+				1, "144jCjBySWvqVv22Upkm6ez6zTVYZYwU9p", false,
+				184800L,
+				"76a914219cda96533a2048068a5ffcee2dc3b70c84282088ac",
+				null,
+				0));  
+		unspentAssetOutputDB.put("144jCjBySWvqVv22Upkm6ez6zTVYZYwU9p", outputList);
+		
+		
+	}
 
 	public int getBestHeight() throws IOException {
 		return 345229;
@@ -147,6 +172,10 @@ public class MockCoinStackAdaptor extends AbstractCoinStackAdaptor {
 
 	public Output[] getUnspentOutputs(String address) throws IOException {
 		return unspentOutputDB.get(address).toArray(new Output[0]);
+	}
+	
+	public AssetOutput[] getUnspentAssetOutputs(String address) throws IOException {
+		return unspentAssetOutputDB.get(address).toArray(new AssetOutput[0]);
 	}
 
 	@Override

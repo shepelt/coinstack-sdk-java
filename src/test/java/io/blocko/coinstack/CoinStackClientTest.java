@@ -33,6 +33,8 @@ import io.blocko.coinstack.model.Block;
 import io.blocko.coinstack.model.BlockchainStatus;
 import io.blocko.coinstack.model.Output;
 import io.blocko.coinstack.model.Transaction;
+import io.blocko.coinstack.openassets.Address;
+import io.blocko.coinstack.util.BitcoinjUtil;
 
 /**
  * @author nepho
@@ -186,6 +188,14 @@ public class CoinStackClientTest {
 		String newAddress = ECKey.deriveAddress(newPrivateKeyWIF);
 		assertNotNull(newAddress);
 		assertTrue(ECKey.validateAddress(newAddress));
+		
+
+		String testAddress = "144jCjBySWvqVv22Upkm6ez6zTVYZYwU9p";
+		String assetAddress = Address.deriveAssetAddressFromBitcoinAddress(testAddress);
+		System.out.println("asset address : " + assetAddress);
+
+		System.out.println("AssetAddress : " + assetAddress);
+		System.out.println("corresponding BitcoinAddress : " + Address.deriveBitcoinAddressFromAssetAddress(assetAddress));
 	}
 
 	@Test
@@ -228,7 +238,7 @@ public class CoinStackClientTest {
 				new Output("45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e", 0, "", false, 4000l,
 						"ffff") };
 		MockWallet wallet = new MockWallet(MainNetParams.get());
-		CoinStackClient.injectOutputs(wallet, outputBatch1, true);
+		BitcoinjUtil.injectOutputs(wallet, outputBatch1, true);
 
 		assertEquals(3, wallet.getTxMap().size());
 
@@ -242,7 +252,7 @@ public class CoinStackClientTest {
 				new Output("45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e", 0, "", false, 4000l,
 						"ffff") };
 		wallet = new MockWallet(MainNetParams.get());
-		CoinStackClient.injectOutputs(wallet, outputBatch2, true);
+		BitcoinjUtil.injectOutputs(wallet, outputBatch2, true);
 
 		assertEquals(3, wallet.getTxMap().size());
 		int nonDummyOutputCount = 0;

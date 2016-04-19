@@ -38,6 +38,7 @@ import io.blocko.coinstack.model.BlockchainStatus;
 import io.blocko.coinstack.model.CredentialsProvider;
 import io.blocko.coinstack.model.Output;
 import io.blocko.coinstack.model.Transaction;
+import io.blocko.coinstack.util.BitcoinjUtil;
 
 /**
  * @author nepho
@@ -69,6 +70,22 @@ public class CoinStackClientTestRegnet {
 					}
 
 				}, Endpoint.TESTNET));
+		
+		coinStackClient = new CoinStackClient(new CoreBackEndAdaptor(
+				new CredentialsProvider() {
+
+					@Override
+					public String getAccessKey() {
+						return "80d1b821dcb89f965452de4ebbf7ae";
+					}
+
+					@Override
+					public String getSecretKey() {
+						return "55e2b5ac1bb4a0486b477926efa8bc";
+					}
+
+				}, Endpoint.TESTNET));
+
 	}
 
 	/**
@@ -279,7 +296,7 @@ public class CoinStackClientTestRegnet {
 						"45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e",
 						0, "", false, 4000l, "ffff") };
 		MockWallet wallet = new MockWallet(RegTestParams.get());
-		CoinStackClient.injectOutputs(wallet, outputBatch1, false);
+		BitcoinjUtil.injectOutputs(wallet, outputBatch1, false);
 
 		assertEquals(3, wallet.getTxMap().size());
 
@@ -297,7 +314,7 @@ public class CoinStackClientTestRegnet {
 						"45c353f908ff6ee2ce6c0a6256e7070c7c071def6f2b04ecf0992a1d266f800e",
 						0, "", false, 4000l, "ffff") };
 		wallet = new MockWallet(MainNetParams.get());
-		CoinStackClient.injectOutputs(wallet, outputBatch2, false);
+		BitcoinjUtil.injectOutputs(wallet, outputBatch2, false);
 
 		assertEquals(3, wallet.getTxMap().size());
 		int nonDummyOutputCount = 0;

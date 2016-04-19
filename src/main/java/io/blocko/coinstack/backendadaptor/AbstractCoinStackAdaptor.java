@@ -8,6 +8,7 @@ import io.blocko.coinstack.model.Output;
 import io.blocko.coinstack.model.Stamp;
 import io.blocko.coinstack.model.Subscription;
 import io.blocko.coinstack.model.Transaction;
+import io.blocko.coinstack.openassets.model.AssetOutput;
 
 public abstract class AbstractCoinStackAdaptor {
 
@@ -32,6 +33,8 @@ public abstract class AbstractCoinStackAdaptor {
 
 	public abstract Output[] getUnspentOutputs(String address) throws IOException, CoinStackException;
 
+	public abstract AssetOutput[] getUnspentAssetOutputs(String address) throws IOException, CoinStackException;
+	
 	public abstract void sendTransaction(String rawTransaction) throws IOException, CoinStackException;
 
 	public abstract Subscription[] listSubscriptions() throws IOException, CoinStackException;

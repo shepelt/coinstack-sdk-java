@@ -1,11 +1,15 @@
 package io.blocko.coinstack;
 
+import java.io.UnsupportedEncodingException;
 import java.security.SecureRandom;
 
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.AddressFormatException;
+import org.bitcoinj.core.Base58;
 import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.Utils;
+import org.bitcoinj.core.VersionedChecksummedBytes;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.params.RegTestParams;
 
@@ -24,14 +28,15 @@ public class ECKey {
 	}
 
 	public static String createNewPrivateKey(boolean isMainNet) {
-		org.bitcoinj.core.ECKey ecKey = new org.bitcoinj.core.ECKey(secureRandom);
+		org.bitcoinj.core.ECKey ecKey = new org.bitcoinj.core.ECKey(
+				secureRandom);
 		if (isMainNet) {
 			return ecKey.getPrivateKeyEncoded(MainNetParams.get()).toString();
 		} else {
 			return ecKey.getPrivateKeyEncoded(RegTestParams.get()).toString();
 		}
 	}
-	
+
 	/**
 	 * Validate a given address
 	 * 
@@ -62,7 +67,7 @@ public class ECKey {
 			return false;
 		}
 	}
-	
+
 	/**
 	 * Get address associated with given private key
 	 * 
@@ -72,7 +77,8 @@ public class ECKey {
 	 * @throws MalformedInputException
 	 *             in case the private key is in incorrect format
 	 */
-	public static String deriveAddress(String privateKeyWIF) throws MalformedInputException {
+	public static String deriveAddress(String privateKeyWIF)
+			throws MalformedInputException {
 		return deriveAddress(privateKeyWIF, true);
 	}
 
@@ -87,17 +93,20 @@ public class ECKey {
 	 * @throws MalformedInputException
 	 *             in case the private key is in incorrect format
 	 */
-	public static String deriveAddress(String privateKeyWIF, boolean isMainNet) throws MalformedInputException {
+	public static String deriveAddress(String privateKeyWIF, boolean isMainNet)
+			throws MalformedInputException {
 		org.bitcoinj.core.ECKey signingKey;
-		NetworkParameters network = isMainNet ? MainNetParams.get() : RegTestParams.get();
+		NetworkParameters network = isMainNet ? MainNetParams.get()
+				: RegTestParams.get();
 		try {
 			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {
-			throw new MalformedInputException("Invalid private key", "Parsing private key failed");
+			throw new MalformedInputException("Invalid private key",
+					"Parsing private key failed");
 		}
 		return signingKey.toAddress(network).toString();
 	}
-	
+
 	/**
 	 * Get public key associated with given private key
 	 * 
@@ -107,7 +116,8 @@ public class ECKey {
 	 * @throws MalformedInputException
 	 *             in case the private key is in incorrect format
 	 */
-	public static byte[] derivePubKey(String privateKeyWIF) throws MalformedInputException {
+	public static byte[] derivePubKey(String privateKeyWIF)
+			throws MalformedInputException {
 		return derivePubKey(privateKeyWIF, true);
 	}
 
@@ -122,17 +132,18 @@ public class ECKey {
 	 * @throws MalformedInputException
 	 *             in case the private key is in incorrect format
 	 */
-	public static byte[] derivePubKey(String privateKeyWIF, boolean isMainNet) throws MalformedInputException {
+	public static byte[] derivePubKey(String privateKeyWIF, boolean isMainNet)
+			throws MalformedInputException {
 		org.bitcoinj.core.ECKey signingKey;
-		NetworkParameters network = isMainNet ? MainNetParams.get() : RegTestParams.get();
+		NetworkParameters network = isMainNet ? MainNetParams.get()
+				: RegTestParams.get();
 		try {
 			signingKey = new DumpedPrivateKey(network, privateKeyWIF).getKey();
 		} catch (AddressFormatException e) {
-			throw new MalformedInputException("Invalid private key", "Parsing private key failed");
+			throw new MalformedInputException("Invalid private key",
+					"Parsing private key failed");
 		}
 		return signingKey.getPubKey();
 	}
-
-
 
 }
