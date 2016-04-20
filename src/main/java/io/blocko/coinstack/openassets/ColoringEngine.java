@@ -2,6 +2,7 @@ package io.blocko.coinstack.openassets;
 
 import java.io.IOException;
 
+import org.apache.http.impl.io.SocketOutputBuffer;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.DumpedPrivateKey;
@@ -15,6 +16,7 @@ import org.bitcoinj.core.VarInt;
 import org.bitcoinj.core.Transaction.SigHash;
 import org.bitcoinj.crypto.TransactionSignature;
 import org.bitcoinj.params.MainNetParams;
+import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.script.ScriptOpCodes;
@@ -35,12 +37,25 @@ import io.blocko.coinstack.openassets.util.Util;
 
 public class ColoringEngine {
 
-	private NetworkParameters network = MainNetParams.get();
+	private NetworkParameters network;
 	private CoinStackClient coinStackClient;
+	private boolean isMainNet;
 	private static final long defaultAssetBTC = Math.convertToSatoshi("0.000006");
 
 	public ColoringEngine(CoinStackClient coinStackClient) {
 		this.coinStackClient = coinStackClient;
+	}
+	
+	public ColoringEngine(CoinStackClient coinStackClient, boolean isMainNet) {
+		this.coinStackClient = coinStackClient;
+		if(isMainNet) {
+			this.network = MainNetParams.get();
+			this.isMainNet = isMainNet;
+		} else {
+			this.network = RegTestParams.get();
+			this.isMainNet = isMainNet;
+		}
+			
 	}
 
 	public String issueAsset(String privateKeyWIF, long assetAmount, String toAddress, long fee)
@@ -52,10 +67,14 @@ public class ColoringEngine {
 		org.bitcoinj.core.Address destinationBitcoinAddress;
 		String bitcoinAddress = null;
 		try {
-			bitcoinAddress = Address.deriveBitcoinAddressFromAssetAddress(toAddress);
+			if(isMainNet)
+				bitcoinAddress = Address.deriveBitcoinAddressFromAssetAddress(toAddress);
+			else
+				bitcoinAddress = Address.deriveBitcoinAddressFromAssetAddress(toAddress, false);
 		} catch (AddressFormatException e1) {
 			e1.printStackTrace();
 		}
+		
 		try {
 			destinationBitcoinAddress = new org.bitcoinj.core.Address(network, bitcoinAddress);
 		} catch (AddressFormatException e) {
@@ -79,25 +98,33 @@ public class ColoringEngine {
 		org.bitcoinj.core.Transaction tx = null;
 
 		for (Output output : outputs) {
-			Sha256Hash outputHash = new Sha256Hash(CoinStackClient.convertEndianness(output.getTransactionId()));
+			if (output.getMetaData() == null || output.getMetaData().getAsset_id() == null) {
+			
+					Sha256Hash outputHash = new Sha256Hash(CoinStackClient.convertEndianness(output.getTransactionId()));
+		
+					if (tx == null || !tx.getHash().equals(outputHash)) {
+						tx = new TemporaryTransaction(MainNetParams.get(), outputHash);
+						tx.getConfidence().setConfidenceType(TransactionConfidence.ConfidenceType.BUILDING);
+					}
+		
+					txTemplate.getConfidence().setConfidenceType(TransactionConfidence.ConfidenceType.BUILDING);
+		
+					// fill hole between indexes with dummies
+					while (tx.getOutputs().size() < output.getIndex()) {
+						tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin.NEGATIVE_SATOSHI, new byte[] {}));
+					}
+		
+					tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin.valueOf(output.getValue()),
+							org.bitcoinj.core.Utils.HEX.decode(output.getScript())));
+		
+					txTemplate.addInput(tx.getOutput(tx.getOutputs().size() - 1));
+					totalValue += output.getValue();
 
-			if (tx == null || !tx.getHash().equals(outputHash)) {
-				tx = new TemporaryTransaction(MainNetParams.get(), outputHash);
-				tx.getConfidence().setConfidenceType(TransactionConfidence.ConfidenceType.BUILDING);
 			}
-
-			txTemplate.getConfidence().setConfidenceType(TransactionConfidence.ConfidenceType.BUILDING);
-
-			// fill hole between indexes with dummies
-			while (tx.getOutputs().size() < output.getIndex()) {
-				tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin.NEGATIVE_SATOSHI, new byte[] {}));
-			}
-
-			tx.addOutput(new TransactionOutput(MainNetParams.get(), tx, Coin.valueOf(output.getValue()),
-					org.bitcoinj.core.Utils.HEX.decode(output.getScript())));
-
-			txTemplate.addInput(tx.getOutput(tx.getOutputs().size() - 1));
-			totalValue += output.getValue();
+		}
+		
+		if (outputs.length == 0) {
+			throw new InsufficientFundException("Insufficient fund");
 		}
 
 		String calculatedAssetID = Address
@@ -161,14 +188,11 @@ public class ColoringEngine {
 		for (int i = 0; i < outputs.length; i++) {
 			if (outputs[i].getMetaData() != null) {
 				if (outputs[i].getMetaData().getAsset_id().equals(assetID)) {
-					System.out.println(
-							"outputs[i].getMetaData().getQuantity() : " + outputs[i].getMetaData().getQuantity());
 					totalAssetAmount += outputs[i].getMetaData().getQuantity();
 				}
 			}
 		}
 
-		System.out.println("totalAssetAmount : " + totalAssetAmount);
 		if (totalAssetAmount < assetAmount)
 			throw new InsufficientFundException("Insufficient fund");
 
@@ -209,7 +233,7 @@ public class ColoringEngine {
 		org.bitcoinj.core.Address destinationBitcoinAddress;
 		String bitcoinAddress = null;
 		try {
-			bitcoinAddress = Address.deriveBitcoinAddressFromAssetAddress(toAddress);
+			bitcoinAddress = Address.deriveBitcoinAddressFromAssetAddress(toAddress, false);
 		} catch (AddressFormatException e1) {
 			e1.printStackTrace();
 		}
