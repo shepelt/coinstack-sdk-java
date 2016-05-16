@@ -86,7 +86,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 		try {
 			resJson = new JSONObject(resJsonString);
 		} catch (JSONException e) {
-			throw new InvalidResponseException("Invalid server response", "failed to parse error information");
+			throw new InvalidResponseException("Invalid server response", "failed to parse error information - " + resJsonString);
 		}
 
 		CoinStackException exception;
@@ -98,7 +98,7 @@ public class CoreBackEndAdaptor extends AbstractCoinStackAdaptor {
 			exception = new CoinStackException(resJson.getString("error_type"), resJson.getInt("error_code"), status,
 					resJson.getString("error_message"), resJson.getBoolean("retry"), cause);
 		} catch (JSONException e) {
-			throw new InvalidResponseException("Invalid server response", "failed to parse error information");
+			throw new InvalidResponseException("Invalid server response", "failed to parse error information - " + resJsonString);
 		}
 		return exception;
 	}
